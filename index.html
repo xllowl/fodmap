@@ -5,66 +5,93 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#f5f6fa">
+<meta name="theme-color" content="#FAF7F0">
 <title>FODMAP 饮食追踪</title>
+<!-- FontAwesome 6.x CDN；加载失败时 body.no-fa 降级为文字/色点，不影响布局 -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+      onerror="document.body.classList.add('no-fa')">
 <style>
+/* ============ 设计变量：粉彩配色 + 强调色（强调色仅用于日期/关键交互，≤8%） ============ */
+:root{
+  --mint:#88E0D0;        /* 薄荷绿 */
+  --pink:#F5C8D8;        /* 柔粉 */
+  --lavender:#C5B4E3;    /* 浅薰衣草紫 */
+  --butter:#FAEEB7;      /* 淡黄 */
+  --sky:#38BDF8;         /* 亮天蓝（强调） */
+  --orange:#FB923C;      /* 暖橙（强调） */
+  --ink:#3D3A34;         /* 主文字（纸张底上对比度>4.5:1） */
+  --ink-2:#6B665C;       /* 次要文字 */
+  --ink-3:#6E685B;       /* 弱化文字（AA 级 ≥4.5:1） */
+  --paper:#FAF7F0;       /* 纸张底色 */
+}
 /* ============ 基础样式：移动端优先、浅色圆角卡片 ============ */
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{font-size:16px}
 body{
   font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;
-  background:#f5f6fa;color:#2c2c2e;padding-bottom:calc(64px + env(safe-area-inset-bottom));
+  color:var(--ink);padding-bottom:calc(64px + env(safe-area-inset-bottom));
+  /* 纸张质感：柔和底色 + SVG 噪点纹理 + 低透明度(12%)细网格叠加 */
+  background-color:var(--paper);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.42 0 0 0 0 0.36 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E"),
+    linear-gradient(rgba(97,85,61,0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(97,85,61,0.12) 1px, transparent 1px);
+  background-size:120px 120px, 28px 28px, 28px 28px;
 }
 header{
-  position:sticky;top:0;z-index:10;background:#f5f6fa;
+  position:sticky;top:0;z-index:10;
+  background:rgba(250,247,240,.92);backdrop-filter:blur(6px);
   padding:calc(10px + env(safe-area-inset-top)) 16px 10px;
-  font-size:1.15rem;font-weight:700;text-align:center;
+  font-size:1.15rem;font-weight:700;text-align:center;color:var(--ink);
+  border-bottom:1px solid rgba(97,85,61,.08);
 }
 main{max-width:560px;margin:0 auto;padding:0 12px}
 section.tabpage{display:none}
 section.tabpage.active{display:block}
 .card{
   background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;
-  box-shadow:0 1px 4px rgba(0,0,0,.06);
+  box-shadow:0 1px 4px rgba(97,85,61,.10);
 }
-.card h2{font-size:1rem;margin-bottom:10px;color:#1c1c1e}
-.card .sub{font-size:.8rem;color:#8e8e93;margin-top:-6px;margin-bottom:10px}
+.card h2{font-size:1rem;margin-bottom:10px;color:var(--ink)}
+.card h2 i{color:#4A4540;font-size:1.1em;margin-right:6px}
+.card .sub{font-size:.8rem;color:var(--ink-3);margin-top:-6px;margin-bottom:10px}
 button{font-family:inherit;cursor:pointer;border:none;border-radius:10px}
+/* 主按钮：薄荷绿系（深一档保证白字对比度≥4.5:1） */
 .btn-primary{
-  width:100%;padding:13px;background:#4a7cff;color:#fff;
+  width:100%;padding:13px;background:#25806F;color:#fff; /* 深薄荷绿，白字 AA 4.78:1 */
   font-size:1rem;font-weight:600;border-radius:12px;
 }
-.btn-primary:disabled{background:#a9bcff}
-.btn-ghost{padding:8px 14px;background:#eef1f7;color:#4a7cff;font-size:.85rem;border-radius:10px}
-.btn-danger{padding:8px 14px;background:#fdecec;color:#e74c3c;font-size:.85rem;border-radius:10px}
+.btn-primary:disabled{background:#9ED8CD}
+.btn-ghost{padding:8px 14px;background:#EFEAF7;color:#5B4E7A;font-size:.85rem;border-radius:10px}
+.btn-danger{padding:8px 14px;background:#FBEFE4;color:#A34A18;font-size:.85rem;border-radius:10px}
 input[type=text],input[type=password],input[type=url],input[type=datetime-local],textarea,select{
-  width:100%;padding:11px 12px;border:1px solid #e2e4ea;border-radius:10px;
-  font-size:1rem;background:#fafbfc;font-family:inherit;
+  width:100%;padding:11px 12px;border:1px solid #E6DFD2;border-radius:10px;
+  font-size:1rem;background:#FDFCF9;font-family:inherit;color:var(--ink);
 }
-input:focus,textarea:focus{outline:none;border-color:#4a7cff}
-label.field{display:block;margin-bottom:12px;font-size:.85rem;color:#6d6d72}
+input:focus,textarea:focus{outline:none;border-color:var(--mint)}
+label.field{display:block;margin-bottom:12px;font-size:.85rem;color:var(--ink-2)}
 label.field input,label.field textarea{margin-top:5px}
-.hint{font-size:.75rem;color:#8e8e93;margin-top:4px}
+.hint{font-size:.75rem;color:var(--ink-3);margin-top:4px}
 .row{display:flex;gap:8px;align-items:center}
 
 /* ============ 底部 Tab 导航 ============ */
 nav#tabbar{
   position:fixed;left:0;right:0;bottom:0;z-index:20;
-  display:flex;background:#fff;border-top:1px solid #e8e9ee;
+  display:flex;background:#fff;border-top:1px solid #EDE7DB;
   padding-bottom:env(safe-area-inset-bottom);
 }
 nav#tabbar button{
-  flex:1;background:none;padding:8px 0 6px;font-size:.7rem;color:#8e8e93;
+  flex:1;background:none;padding:8px 0 6px;font-size:.7rem;color:var(--ink-3);
   display:flex;flex-direction:column;align-items:center;gap:2px;border-radius:0;
 }
 nav#tabbar button .ico{font-size:1.3rem}
-nav#tabbar button.active{color:#4a7cff;font-weight:600}
+nav#tabbar button.active{color:#25806F;font-weight:600}
 
 /* ============ 拍照区 ============ */
 .photo-btn{
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
-  flex:1;padding:22px 8px;border:2px dashed #c9d4ff;border-radius:12px;
-  background:#f7f9ff;color:#4a7cff;font-size:.9rem;cursor:pointer;
+  flex:1;padding:22px 8px;border:2px dashed var(--mint);border-radius:12px;
+  background:#F2FAF7;color:#25806F;font-size:.9rem;cursor:pointer;
 }
 .photo-btn .ico{font-size:1.8rem}
 .photo-btns{display:flex;gap:10px}
@@ -78,23 +105,23 @@ nav#tabbar button.active{color:#4a7cff;font-weight:600}
 /* ============ 食材确认列表 ============ */
 .ing-row{
   display:flex;align-items:center;gap:8px;padding:10px 2px;
-  border-bottom:1px solid #f0f1f5;
+  border-bottom:1px solid #F3EFE6;
 }
 .ing-row:last-child{border-bottom:none}
-.dot{width:18px;height:18px;border-radius:50%;flex:none;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.12)}
-.dot-high{background:#e74c3c}.dot-medium{background:#f1c40f}.dot-low{background:#2ecc71}.dot-unknown{background:#d1d1d6}
+.dot{width:18px;height:18px;border-radius:50%;flex:none;border:2px solid #fff;box-shadow:0 0 0 1px rgba(97,85,61,.25);background:#fff;padding:0}
+.dot-high{background:#E86A5A}.dot-medium{background:#E5B93E}.dot-low{background:#3BAF7C}.dot-unknown{background:#D8D2C6}
 .ing-main{flex:1;min-width:0}
 .ing-name{font-size:.95rem}
-.ing-note{display:block;font-size:.7rem;color:#8e8e93}
+.ing-note{display:block;font-size:.7rem;color:var(--ink-3)}
 .tag-inferred{
-  background:#fff4e0;color:#e67e22;font-size:.68rem;padding:2px 7px;
+  background:#FBEFE4;color:#A34A18;font-size:.68rem;padding:2px 7px;
   border-radius:6px;margin-left:6px;vertical-align:1px;
 }
 .amt{
-  background:#eef1f7;color:#4a4a4e;font-size:.8rem;padding:6px 10px;
+  background:#F3EFE6;color:var(--ink-2);font-size:.8rem;padding:6px 10px;
   border-radius:8px;flex:none;min-width:52px;
 }
-.ing-del{color:#c7c7cc;font-size:1rem;padding:6px 8px;background:none;flex:none}
+.ing-del{color:#B8B0A0;font-size:1rem;padding:6px 8px;background:none;flex:none}
 .add-ing{display:flex;gap:8px;margin-top:10px}
 .add-ing input{flex:1}
 .add-ing button{flex:none}
@@ -102,65 +129,66 @@ nav#tabbar button.active{color:#4a7cff;font-weight:600}
 /* ============ 模板区 ============ */
 .tpl-scroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
 .tpl-chip{
-  flex:none;display:flex;align-items:center;gap:6px;background:#eef3ff;color:#35507a;
+  flex:none;display:flex;align-items:center;gap:6px;background:#EFEAF7;color:#5B4E7A;
   padding:9px 12px;border-radius:20px;font-size:.85rem;
 }
-.tpl-chip .x{color:#9db3d8;font-size:.9rem;padding:0 2px}
-.empty-tip{color:#b0b0b6;font-size:.85rem;padding:6px 2px}
+.tpl-chip .x{color:#B0A3CF;font-size:.9rem;padding:0 2px}
+.empty-tip{color:#B8B0A0;font-size:.85rem;padding:6px 2px}
 
 /* ============ 症状 chips ============ */
 .sym-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
 .sym-chips button{
-  padding:9px 16px;border-radius:20px;background:#eef1f7;font-size:.9rem;color:#4a4a4e;
+  padding:9px 16px;border-radius:20px;background:#F3EFE6;font-size:.9rem;color:var(--ink-2);
+  display:inline-flex;align-items:center;gap:6px;
 }
-.sym-chips button.sel{background:#4a7cff;color:#fff;font-weight:600}
+.sym-chips button.sel{background:#25806F;color:#fff;font-weight:600}
 .sev-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-.sev-row input[type=range]{flex:1;accent-color:#4a7cff}
-.sev-val{font-size:1.1rem;font-weight:700;color:#4a7cff;min-width:48px;text-align:center}
+.sev-row input[type=range]{flex:1;accent-color:#25806F}
+.sev-val{font-size:1.1rem;font-weight:700;color:#25806F;min-width:48px;text-align:center}
 
 /* ============ 时间线 ============ */
-.day-title{font-size:.85rem;font-weight:700;color:#8e8e93;margin:16px 4px 8px}
+.day-title{font-size:.85rem;font-weight:700;color:#9A5420;margin:16px 4px 8px} /* 暖橙强调：日期标记（AA 5.36:1） */
 .tl-item{position:relative;overflow:hidden;border-radius:14px;margin-bottom:10px}
 .tl-del{
-  position:absolute;right:0;top:0;bottom:0;width:76px;background:#e74c3c;color:#fff;
+  position:absolute;right:0;top:0;bottom:0;width:76px;background:#C0392B;color:#fff; /* AA 白字 4.70:1 */
   display:flex;align-items:center;justify-content:center;font-size:.9rem;border-radius:0;
 }
 .tl-body{
   position:relative;background:#fff;border-radius:14px;padding:12px 14px;
-  box-shadow:0 1px 4px rgba(0,0,0,.06);transition:transform .15s ease;
+  box-shadow:0 1px 4px rgba(97,85,61,.10);transition:transform .15s ease;
   touch-action:pan-y;
 }
 .tl-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
-.tl-time{font-size:.8rem;color:#8e8e93;flex:none;background:#f0f1f5;border:none;padding:3px 8px;border-radius:7px}
+.tl-time{font-size:.8rem;color:var(--ink-2);flex:none;background:#F3EFE6;border:none;padding:3px 8px;border-radius:7px}
 .tl-dish{font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tl-thumb{width:40px;height:40px;object-fit:cover;border-radius:8px;flex:none}
 .tl-chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{
-  font-size:.75rem;padding:3px 9px;border-radius:12px;background:#f4f5f8;
-  border-left:4px solid #d1d1d6;color:#4a4a4e;
+  font-size:.75rem;padding:3px 9px;border-radius:12px;background:#F8F6F1;
+  border-left:4px solid #D8D2C6;color:var(--ink-2);
 }
-.chip.high{border-left-color:#e74c3c;background:#fdecec}
-.chip.medium{border-left-color:#f1c40f;background:#fdf8e1}
-.chip.low{border-left-color:#2ecc71;background:#e9f9f0}
-.chip .inf{color:#e67e22}
-.tl-note{font-size:.78rem;color:#8e8e93;margin-top:6px}
+.chip.high{border-left-color:#E86A5A;background:#FBEBE8}
+.chip.medium{border-left-color:#E5B93E;background:#FBF4DC}
+.chip.low{border-left-color:#3BAF7C;background:#E8F5EE}
+.chip .inf{color:#A34A18}
+.tl-note{font-size:.78rem;color:var(--ink-3);margin-top:6px}
 .tl-sym{display:flex;align-items:center;gap:8px}
-.tl-sym .ico{font-size:1.2rem}
-.sev-badge{margin-left:auto;font-size:.8rem;font-weight:700;padding:3px 9px;border-radius:10px;background:#fdecec;color:#e74c3c}
+.tl-sym .ico{font-size:1.2rem;color:#9A5420}
+.sev-badge{margin-left:auto;font-size:.8rem;font-weight:700;padding:3px 9px;border-radius:10px;background:#FBEBE8;color:#C0392B}
 
 /* ============ 统计 ============ */
 .stat-bar{display:flex;height:22px;border-radius:11px;overflow:hidden;margin:8px 0 10px}
 .stat-bar div{transition:width .3s}
-.legend{display:flex;gap:14px;font-size:.8rem;color:#6d6d72;flex-wrap:wrap}
-.trig-row{padding:10px 2px;border-bottom:1px solid #f0f1f5}
+.legend{display:flex;gap:14px;font-size:.8rem;color:var(--ink-2);flex-wrap:wrap;align-items:center}
+.trig-row{padding:10px 2px;border-bottom:1px solid #F3EFE6}
 .trig-row:last-child{border-bottom:none}
 .trig-top{display:flex;align-items:center;gap:8px}
 .trig-name{font-size:.92rem;flex:1}
 .trig-rate{font-weight:700;font-size:.9rem}
-.trig-bar{height:6px;border-radius:3px;background:#f0f1f5;margin-top:6px}
-.trig-bar i{display:block;height:100%;border-radius:3px;background:#e74c3c}
-.trig-meta{font-size:.72rem;color:#8e8e93;margin-top:4px}
-.low-sample{color:#e67e22;margin-left:6px}
+.trig-bar{height:6px;border-radius:3px;background:#F3EFE6;margin-top:6px}
+.trig-bar i{display:block;height:100%;border-radius:3px;background:#E86A5A}
+.trig-meta{font-size:.72rem;color:var(--ink-3);margin-top:4px}
+.low-sample{color:#A34A18;margin-left:6px}
 
 /* ============ 我的 ============ */
 .me-row{display:flex;gap:8px;flex-wrap:wrap}
@@ -174,33 +202,44 @@ nav#tabbar button.active{color:#4a7cff;font-weight:600}
 }
 /* ============ 日历视图 ============ */
 .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.cal-nav{width:36px;height:32px;background:#eef1f7;color:#4a7cff;font-size:1.1rem;border-radius:8px}
+.cal-nav{width:36px;height:32px;background:#F3EFE6;color:#25806F;font-size:1rem;border-radius:8px}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
-.cal-week{font-size:.72rem;color:#8e8e93;text-align:center;margin-bottom:4px}
+.cal-week{font-size:.72rem;color:var(--ink-3);text-align:center;margin-bottom:4px}
 .cal-cell{
   aspect-ratio:1;display:flex;align-items:center;justify-content:center;
-  font-size:.82rem;border-radius:8px;background:#fafbfc;color:#4a4a4e;position:relative;
+  font-size:.82rem;border-radius:8px;background:#F8F6F1;color:var(--ink-2);position:relative;
 }
-.cal-cell.other{color:#c7c7cc;background:transparent}
-.cal-cell.today{box-shadow:inset 0 0 0 1.5px #4a7cff;font-weight:700}
+.cal-cell.other{color:#CFC8BA;background:transparent}
+.cal-cell.today{box-shadow:inset 0 0 0 1.5px var(--sky);font-weight:700} /* 亮天蓝强调：今日 */
 .cal-cell.has-sym{color:#fff;font-weight:600}
-.cal-cell.no-sym{background:#e8f5e9}
-.cal-cell .meal-dot{position:absolute;bottom:3px;width:4px;height:4px;border-radius:50%;background:#4a7cff}
+.cal-cell.no-sym{background:#E3F4EE}
+.cal-cell .meal-dot{position:absolute;bottom:3px;width:4px;height:4px;border-radius:50%;background:#25806F}
 .cal-dot{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:-1px;margin-right:3px}
+
+/* ============ FontAwesome 图标规范 ============ */
+/* 标题旁 110% 字号；正文旁 90% 字号；功能图标 hover 过渡 */
+.card h2 i{font-size:1.1em}
+button i, .tl-sym .ico i, .sym-chips i, .legend i{font-size:.9em}
+.fa-btn{transition:opacity .2s ease, transform .2s ease, filter .2s ease;opacity:.85}
+.fa-btn:hover{opacity:1;transform:scale(1.05);filter:drop-shadow(0 1px 2px rgba(61,58,52,.35))}
+/* CDN 加载失败降级：隐藏图标字体元素，显示降级文字/色点 */
+body.no-fa .fa-only{display:none!important}
+.fa-fallback{display:none}
+body.no-fa .fa-fallback{display:inline}
 
 /* 通用模态对话框（替代不兼容的 prompt/confirm） */
 #modalMask{
-  display:none;position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.4);
+  display:none;position:fixed;inset:0;z-index:50;background:rgba(61,58,52,.45);
   align-items:center;justify-content:center;padding:24px;
 }
 #modalMask.show{display:flex}
 .modal-box{background:#fff;border-radius:16px;padding:18px;width:100%;max-width:340px}
 .modal-box h3{font-size:1rem;margin-bottom:8px}
-.modal-box .mdesc{font-size:.85rem;color:#6d6d72;margin-bottom:12px}
+.modal-box .mdesc{font-size:.85rem;color:var(--ink-2);margin-bottom:12px}
 .modal-btns{display:flex;gap:8px;margin-top:14px}
 .modal-btns button{flex:1;padding:11px;font-size:.95rem;border-radius:10px}
-.modal-btns .m-ok{background:#4a7cff;color:#fff;font-weight:600}
-.modal-btns .m-cancel{background:#eef1f7;color:#4a4a4e}
+.modal-btns .m-ok{background:#25806F;color:#fff;font-weight:600}
+.modal-btns .m-cancel{background:#F3EFE6;color:var(--ink-2)}
 </style>
 </head>
 <body>
@@ -212,7 +251,7 @@ nav#tabbar button.active{color:#4a7cff;font-weight:600}
 <section id="page-record" class="tabpage active">
 
   <div class="card">
-    <h2>📷 饮食记录</h2>
+    <h2><i class="fa-solid fa-utensils" aria-hidden="true"></i>饮食记录</h2>
     <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none">
     <input type="file" id="galleryInput" accept="image/*" style="display:none">
     <div id="photoArea"></div>
@@ -226,8 +265,8 @@ nav#tabbar button.active{color:#4a7cff;font-weight:600}
 
   <!-- 确认界面（分析后显示） -->
   <div class="card" id="confirmCard" style="display:none">
-    <h2>✅ 确认食材</h2>
-    <div class="sub">点色点改级别（🔴高 🟡中 🟢低 ⚪未知），手动定级会自动记住，下次同食材自动带出</div>
+    <h2><i class="fa-solid fa-circle-check" aria-hidden="true"></i>确认食材</h2>
+    <div class="sub">点色点改级别（<span style="color:#E86A5A">●</span>高 <span style="color:#E5B93E">●</span>中 <span style="color:#3BAF7C">●</span>低 <span style="color:#B8B0A0">●</span>未知），手动定级会自动记住，下次同食材自动带出</div>
     <label class="field">菜名
       <input type="text" id="dishInput">
     </label>
@@ -244,15 +283,15 @@ nav#tabbar button.active{color:#4a7cff;font-weight:600}
   </div>
 
   <div class="card">
-    <h2>⭐ 模板快捷区</h2>
+    <h2><i class="fa-solid fa-star" aria-hidden="true"></i>模板快捷区</h2>
     <div class="tpl-scroll" id="tplList"></div>
   </div>
 
   <div class="card">
-    <h2>🩺 症状记录</h2>
+    <h2><i class="fa-solid fa-heart-pulse" aria-hidden="true"></i>症状记录</h2>
     <div class="sym-chips" id="symChips"></div>
     <div class="sev-row">
-      <span style="font-size:.85rem;color:#6d6d72">严重度</span>
+      <span style="font-size:.85rem;color:var(--ink-2)">严重度</span>
       <input type="range" id="sevSlider" min="1" max="10" value="5">
       <span class="sev-val" id="sevVal">5/10</span>
     </div>
@@ -267,33 +306,33 @@ nav#tabbar button.active{color:#4a7cff;font-weight:600}
 <section id="page-timeline" class="tabpage">
   <div class="card">
     <div class="cal-head">
-      <button id="calPrev" class="cal-nav">‹</button>
+      <button id="calPrev" class="cal-nav" aria-label="上个月"><i class="fa-solid fa-chevron-left fa-btn" aria-hidden="true"></i></button>
       <span id="calTitle" style="font-weight:700"></span>
-      <button id="calNext" class="cal-nav">›</button>
+      <button id="calNext" class="cal-nav" aria-label="下个月"><i class="fa-solid fa-chevron-right fa-btn" aria-hidden="true"></i></button>
     </div>
     <div class="cal-grid cal-week">
       <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
     </div>
     <div class="cal-grid" id="calGrid"></div>
     <div class="legend" style="margin-top:10px">
-      <span><i class="cal-dot" style="background:#ffcdd2"></i>轻(1-3)</span>
-      <span><i class="cal-dot" style="background:#ef9a9a"></i>中(4-6)</span>
-      <span><i class="cal-dot" style="background:#e74c3c"></i>重(7-10)</span>
-      <span><i class="cal-dot" style="background:#e8f5e9"></i>无症状</span>
+      <span><i class="cal-dot" style="background:#F5C8D8"></i>轻(1-3)</span>
+      <span><i class="cal-dot" style="background:#EC8FAF"></i>中(4-6)</span>
+      <span><i class="cal-dot" style="background:#D14D3D"></i>重(7-10)</span>
+      <span><i class="cal-dot" style="background:#E3F4EE"></i>无症状</span>
     </div>
   </div>
-  <div class="card" style="font-size:.8rem;color:#8e8e93">左滑任意条目可删除</div>
+  <div class="card" style="font-size:.8rem;color:var(--ink-3)">左滑任意条目可删除</div>
   <div id="timelineList"></div>
 </section>
 
 <!-- ================= Tab3 统计 ================= -->
 <section id="page-stats" class="tabpage">
   <div class="card">
-    <h2>📊 近 30 天 FODMAP 餐次占比</h2>
+    <h2><i class="fa-solid fa-chart-pie" aria-hidden="true"></i>近 30 天 FODMAP 餐次占比</h2>
     <div id="levelStats"></div>
   </div>
   <div class="card">
-    <h2>🔍 食材触发分析</h2>
+    <h2><i class="fa-solid fa-magnifying-glass-chart" aria-hidden="true"></i>食材触发分析</h2>
     <div class="sub">食用后 24 小时内出现症状的比例（仅统计出现 ≥2 次的食材）</div>
     <div id="trigStats"></div>
   </div>
@@ -302,7 +341,7 @@ nav#tabbar button.active{color:#4a7cff;font-weight:600}
 <!-- ================= Tab4 我的 ================= -->
 <section id="page-me" class="tabpage">
   <div class="card">
-    <h2>⚙️ API 设置</h2>
+    <h2><i class="fa-solid fa-gear" aria-hidden="true"></i>API 设置</h2>
     <label class="field">Base URL
       <input type="url" id="setBaseUrl" placeholder="https://api.openai.com/v1/chat/completions">
       <div class="hint">可改通义千问/智谱等 OpenAI 兼容接口</div>
@@ -317,7 +356,7 @@ nav#tabbar button.active{color:#4a7cff;font-weight:600}
     <button class="btn-primary" id="saveSetBtn">保存设置</button>
   </div>
   <div class="card">
-    <h2>💾 数据管理</h2>
+    <h2><i class="fa-solid fa-database" aria-hidden="true"></i>数据管理</h2>
     <div class="me-row">
       <button class="btn-ghost" id="expJsonBtn">导出 JSON 备份</button>
       <button class="btn-ghost" id="impJsonBtn">导入 JSON 恢复</button>
@@ -326,7 +365,7 @@ nav#tabbar button.active{color:#4a7cff;font-weight:600}
     </div>
     <input type="file" id="impFileInput" accept="application/json" style="display:none">
   </div>
-  <div class="card" style="font-size:.78rem;color:#8e8e93">
+  <div class="card" style="font-size:.78rem;color:var(--ink-3)">
     数据仅存于本机浏览器（IndexedDB），API Key 存于 localStorage，不会上传到任何服务器（除你配置的模型 API 外）。
   </div>
 </section>
@@ -347,10 +386,10 @@ nav#tabbar button.active{color:#4a7cff;font-weight:600}
 
 <!-- ================= 底部导航 ================= -->
 <nav id="tabbar">
-  <button data-tab="record" class="active"><span class="ico">📝</span>记录</button>
-  <button data-tab="timeline"><span class="ico">🕘</span>时间线</button>
-  <button data-tab="stats"><span class="ico">📊</span>统计</button>
-  <button data-tab="me"><span class="ico">⚙️</span>我的</button>
+  <button data-tab="record" class="active" aria-label="记录"><span class="ico"><i class="fa-solid fa-pen-to-square fa-btn" aria-hidden="true"></i></span>记录</button>
+  <button data-tab="timeline" aria-label="时间线"><span class="ico"><i class="fa-solid fa-clock-rotate-left fa-btn" aria-hidden="true"></i></span>时间线</button>
+  <button data-tab="stats" aria-label="统计"><span class="ico"><i class="fa-solid fa-chart-column fa-btn" aria-hidden="true"></i></span>统计</button>
+  <button data-tab="me" aria-label="我的"><span class="ico"><i class="fa-solid fa-user fa-btn" aria-hidden="true"></i></span>我的</button>
 </nav>
 
 <script>
@@ -476,7 +515,15 @@ function pad(n){ return String(n).padStart(2,'0'); }
 function dayKey(ts){ const d=new Date(ts); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
 function hm(ts){ const d=new Date(ts); return pad(d.getHours())+':'+pad(d.getMinutes()); }
 function dtLocalVal(ts){ const d=new Date(ts); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes()); }
-const LEVEL_EMOJI = {high:'🔴',medium:'🟡',low:'🟢',unknown:'⚪'};
+/* FODMAP 级别 → 颜色/标签/FA圆点图标（替代原生 emoji，带降级文字） */
+const LEVEL_COLOR = {high:'#E86A5A',medium:'#E5B93E',low:'#3BAF7C',unknown:'#B8B0A0'};
+const LEVEL_EMOJI = {high:'🔴',medium:'🟡',low:'🟢',unknown:'⚪'}; // 仅用于 Markdown 导出（纯文本）
+function lvlIcon(lv){
+  const c = LEVEL_COLOR[lv] || LEVEL_COLOR.unknown;
+  const label = {high:'高FODMAP',medium:'中FODMAP',low:'低FODMAP',unknown:'未知级别'}[lv] || '未知级别';
+  return '<i class="fa-solid fa-circle fa-only" style="color:' + c + ';font-size:.7em" aria-label="' + label + '" role="img"></i>' +
+         '<span class="fa-fallback" style="color:' + c + '" role="img" aria-label="' + label + '">●</span>';
+}
 const LEVEL_TEXT  = {high:'高',medium:'中',low:'低',unknown:'未知'};
 const LEVEL_ORDER = {unknown:0,low:1,medium:2,high:3};
 const AMT_SHORT   = {'少量':'少','中等':'中','大量':'大'};
@@ -581,8 +628,8 @@ const state = {
 function renderPhotoPicker(){
   $('photoArea').innerHTML =
     '<div class="photo-btns">' +
-      '<button class="photo-btn" id="takeBtn"><span class="ico">📸</span><span>拍照</span></button>' +
-      '<button class="photo-btn" id="pickBtn"><span class="ico">🖼️</span><span>从相册选择</span></button>' +
+      '<button class="photo-btn" id="takeBtn" aria-label="拍照"><span class="ico"><i class="fa-solid fa-camera fa-btn" aria-hidden="true"></i></span><span>拍照</span></button>' +
+      '<button class="photo-btn" id="pickBtn" aria-label="从相册选择"><span class="ico"><i class="fa-solid fa-image fa-btn" aria-hidden="true"></i></span><span>从相册选择</span></button>' +
     '</div>';
   $('takeBtn').addEventListener('click', ()=> $('photoInput').click());
   $('pickBtn').addEventListener('click', ()=> $('galleryInput').click());
@@ -640,7 +687,7 @@ async function analyze(){
   }
   const btn = $('analyzeBtn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spin"></span>分析中…';
+  btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin fa-only" aria-hidden="true"></i><span class="spin fa-fallback"></span> 分析中…';
   try{
     // 组装 user message：base64 图放 image_url 字段
     const userContent = [];
@@ -730,7 +777,7 @@ function renderIngList(){
         (!hit ? '<span class="ing-note">本地表未收录，点左侧圆点手动定级</span>' : '') +
       '</div>' +
       '<button class="amt" data-act="amount">' + esc(g.amount) + '</button>' +
-      '<button class="ing-del" data-act="del">✕</button>';
+      '<button class="ing-del" data-act="del" aria-label="删除食材"><i class="fa-solid fa-xmark fa-only" aria-hidden="true"></i><span class="fa-fallback">✕</span></button>';
     row.querySelectorAll('[data-act]').forEach(el=>{
       el.addEventListener('click', ()=>{
         const act = el.dataset.act;
@@ -803,9 +850,9 @@ async function renderTemplates(){
   tpls.sort((a,b)=>b.id-a.id).forEach(t=>{
     const chip = document.createElement('button');
     chip.className = 'tpl-chip';
-    chip.innerHTML = esc(t.name) + ' <span class="x" title="删除模板">✕</span>';
+    chip.innerHTML = esc(t.name) + ' <span class="x" title="删除模板" role="button" aria-label="删除模板"><i class="fa-solid fa-xmark fa-only" aria-hidden="true"></i><span class="fa-fallback">✕</span></span>';
     chip.addEventListener('click', async e=>{
-      if(e.target.classList.contains('x')){
+      if(e.target.closest('.x')){
         if(await showConfirm('删除模板', '确认删除模板「' + t.name + '」？')){
           await dbDel('templates', t.id); renderTemplates();
         }
@@ -828,17 +875,23 @@ async function renderTemplates(){
 /* ==================================================================
  * Tab1 - 症状记录：chips + 滑块，两步完成
  * ================================================================== */
+/* 症状类型 → FontAwesome 图标（CDN 失败时降级为 fa-fallback 文字点） */
 const SYM_TYPES = [
-  {t:'腹痛', i:'😣'}, {t:'腹胀', i:'🎈'}, {t:'腹泻', i:'💧'},
-  {t:'便秘', i:'🚫'}, {t:'产气', i:'💨'}, {t:'恶心', i:'🤢'}
+  {t:'腹痛', i:'fa-bolt'},          {t:'腹胀', i:'fa-circle-up'},
+  {t:'腹泻', i:'fa-droplet'},       {t:'便秘', i:'fa-ban'},
+  {t:'产气', i:'fa-wind'},          {t:'恶心', i:'fa-dizzy'}
 ];
+function symIcon(cls, label){
+  return '<i class="fa-solid ' + cls + ' fa-only" aria-label="' + label + '" role="img"></i>' +
+         '<span class="fa-fallback" role="img" aria-label="' + label + '">◆</span>';
+}
 let selSym = null;
 function renderSymChips(){
   const box = $('symChips');
   box.innerHTML = '';
   SYM_TYPES.forEach(s=>{
     const b = document.createElement('button');
-    b.textContent = s.i + ' ' + s.t;
+    b.innerHTML = symIcon(s.i, s.t) + ' ' + s.t;
     b.className = selSym === s.t ? 'sel' : '';
     b.addEventListener('click', ()=>{ selSym = s.t; renderSymChips(); });
     box.appendChild(b);
@@ -888,7 +941,7 @@ function renderCalendar(meals, symps){
       const sev = symMap[k];
       if(sev){
         cell.classList.add('has-sym');
-        cell.style.background = sev <= 3 ? '#ffcdd2' : sev <= 6 ? '#ef9a9a' : '#e74c3c';
+        cell.style.background = sev <= 3 ? '#F5C8D8' : sev <= 6 ? '#EC8FAF' : '#D14D3D';
         cell.title = '当日最高症状严重度 ' + sev + '/10';
       }else if(mealSet[k]){ cell.classList.add('no-sym'); } // 有饮食记录但无症状
       if(k === todayK) cell.classList.add('today');
@@ -937,17 +990,17 @@ function buildTimelineItem(it){
     body.innerHTML =
       '<div class="tl-head">' +
         '<button class="tl-time" data-act="time" title="点按修改时间">' + hm(it.time) + '</button>' +
-        '<span>' + LEVEL_EMOJI[it.maxLevel] + '</span>' +
+        '<span>' + lvlIcon(it.maxLevel) + '</span>' +
         '<span class="tl-dish">' + esc(it.dishName) + '</span>' +
         (it.thumbnail ? '<img class="tl-thumb" src="' + it.thumbnail + '">' : '') +
       '</div>' +
       '<div class="tl-chips">' + chips + '</div>' +
       (it.note ? '<div class="tl-note">备注：' + esc(it.note) + '</div>' : '');
   }else{
-    const meta = SYM_TYPES.find(s=>s.t===it.type) || {i:'🩺'};
+    const meta = SYM_TYPES.find(s=>s.t===it.type) || {i:'fa-stethoscope'};
     body.innerHTML =
       '<div class="tl-sym">' +
-        '<span class="ico">' + meta.i + '</span>' +
+        '<span class="ico">' + symIcon(meta.i, it.type) + '</span>' +
         '<button class="tl-time" data-act="time" title="点按修改时间">' + hm(it.time) + '</button>' +
         '<span>' + esc(it.type) + '</span>' +
         '<span class="sev-badge">' + it.severity + '/10</span>' +
@@ -1029,16 +1082,16 @@ async function renderStats(){
     const pct = k => Math.round(cnt[k]/total*100);
     box.innerHTML =
       '<div class="stat-bar">' +
-        '<div style="width:' + pct('high') + '%;background:#e74c3c"></div>' +
-        '<div style="width:' + pct('medium') + '%;background:#f1c40f"></div>' +
-        '<div style="width:' + pct('low') + '%;background:#2ecc71"></div>' +
-        '<div style="width:' + pct('unknown') + '%;background:#d1d1d6"></div>' +
+        '<div style="width:' + pct('high') + '%;background:#E86A5A"></div>' +
+        '<div style="width:' + pct('medium') + '%;background:#E5B93E"></div>' +
+        '<div style="width:' + pct('low') + '%;background:#3BAF7C"></div>' +
+        '<div style="width:' + pct('unknown') + '%;background:#D8D2C6"></div>' +
       '</div>' +
       '<div class="legend">' +
-        '<span>🔴 高 ' + cnt.high + ' 餐（' + pct('high') + '%）</span>' +
-        '<span>🟡 中 ' + cnt.medium + ' 餐（' + pct('medium') + '%）</span>' +
-        '<span>🟢 低 ' + cnt.low + ' 餐（' + pct('low') + '%）</span>' +
-        (cnt.unknown ? '<span>⚪ 未知 ' + cnt.unknown + ' 餐</span>' : '') +
+        '<span>' + lvlIcon('high') + ' 高 ' + cnt.high + ' 餐（' + pct('high') + '%）</span>' +
+        '<span>' + lvlIcon('medium') + ' 中 ' + cnt.medium + ' 餐（' + pct('medium') + '%）</span>' +
+        '<span>' + lvlIcon('low') + ' 低 ' + cnt.low + ' 餐（' + pct('low') + '%）</span>' +
+        (cnt.unknown ? '<span>' + lvlIcon('unknown') + ' 未知 ' + cnt.unknown + ' 餐</span>' : '') +
       '</div>';
   }
 
@@ -1067,13 +1120,13 @@ async function renderStats(){
     div.className = 'trig-row';
     div.innerHTML =
       '<div class="trig-top">' +
-        '<span>' + LEVEL_EMOJI[lv] + '</span>' +
+        '<span>' + lvlIcon(lv) + '</span>' +
         '<span class="trig-name">' + esc(name) + '</span>' +
         '<span class="trig-rate">' + Math.round(rate*100) + '%</span>' +
       '</div>' +
       '<div class="trig-bar"><i style="width:' + Math.round(rate*100) + '%"></i></div>' +
       '<div class="trig-meta">' + v.sympt + '/' + v.total + ' 次食用后出现症状' +
-        (v.total < 5 ? '<span class="low-sample">⚠ 样本不足</span>' : '') +
+        (v.total < 5 ? '<span class="low-sample"><i class="fa-solid fa-triangle-exclamation fa-only" aria-hidden="true"></i><span class="fa-fallback">⚠</span> 样本不足</span>' : '') +
       '</div>';
     tbox.appendChild(div);
   });
@@ -1188,6 +1241,14 @@ $('clearBtn').addEventListener('click', async ()=>{
 /* ==================================================================
  * 初始化
  * ================================================================== */
+/* FontAwesome 兜底检测：link onerror 之外，延迟确认字体真正注册成功 */
+(function faHealthCheck(){
+  setTimeout(()=>{
+    const loaded = document.fonts && [...document.fonts].some(f=> f.family.includes('Font Awesome') && f.status === 'loaded');
+    if(!loaded) document.body.classList.add('no-fa');
+  }, 1500);
+})();
+
 (async function init(){
   try{ await openDB(); }
   catch(e){ alert('IndexedDB 打开失败，请确认未处于无痕模式'); return; }
