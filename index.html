@@ -189,6 +189,16 @@ nav#tabbar button.active{color:#25806F;font-weight:600}
 .trig-bar i{display:block;height:100%;border-radius:3px;background:#E86A5A}
 .trig-meta{font-size:.72rem;color:var(--ink-3);margin-top:4px}
 .low-sample{color:#A34A18;margin-left:6px}
+/* 绿色安心食材折叠区 */
+.safe-fold{margin-top:10px;border-top:1px dashed #E6DFD2;padding-top:10px}
+.safe-fold summary{
+  cursor:pointer;list-style:none;font-size:.85rem;color:#25806F;font-weight:600;
+  display:flex;align-items:center;gap:6px;
+}
+.safe-fold summary::-webkit-details-marker{display:none}
+.safe-fold summary i{transition:transform .2s ease}
+.safe-fold[open] summary i{transform:rotate(180deg)}
+.safe-list{margin-top:4px}
 
 /* ============ 我的 ============ */
 .me-row{display:flex;gap:8px;flex-wrap:wrap}
@@ -333,7 +343,7 @@ body.no-fa .fa-fallback{display:inline}
   </div>
   <div class="card">
     <h2><i class="fa-solid fa-magnifying-glass-chart" aria-hidden="true"></i>食材触发分析</h2>
-    <div class="sub">食用后 24 小时内出现症状的比例（仅统计出现 ≥2 次的食材）</div>
+    <div class="sub">食用后 24 小时内出现症状的比例（仅统计出现 ≥5 次的食材）</div>
     <div id="trigStats"></div>
   </div>
 </section>
@@ -1176,12 +1186,16 @@ async function renderStats(){
     });
   });
   const rows = Object.entries(map)
-    .filter(([,v])=> v.total >= 2)
+    .filter(([,v])=> v.total >= 5)
     .sort((a,b)=> (b[1].sympt/b[1].total) - (a[1].sympt/a[1].total) || b[1].total - a[1].total);
   const tbox = $('trigStats');
-  if(!rows.length){ tbox.innerHTML = '<div class="empty-tip">数据不足：同一食材需出现至少 2 次</div>'; return; }
+  if(!rows.length){ tbox.innerHTML = '<div class="empty-tip">数据不足：同一食材需出现至少 5 次</div>'; return; }
   tbox.innerHTML = '';
-  rows.forEach(([name, v])=>{
+
+  // 触发率 >0 的优先展示；从未引发症状的折叠到"绿色安心食材"
+  const risky = rows.filter(([,v])=> v.sympt > 0);
+  const safe  = rows.filter(([,v])=> v.sympt === 0);
+  const mkRow = (name, v)=>{
     const rate = v.sympt / v.total;
     const lv = fodmapLevel(name);
     const div = document.createElement('div');
@@ -1193,11 +1207,22 @@ async function renderStats(){
         '<span class="trig-rate">' + Math.round(rate*100) + '%</span>' +
       '</div>' +
       '<div class="trig-bar"><i style="width:' + Math.round(rate*100) + '%"></i></div>' +
-      '<div class="trig-meta">' + v.sympt + '/' + v.total + ' 次食用后出现症状' +
-        (v.total < 5 ? '<span class="low-sample"><i class="fa-solid fa-triangle-exclamation fa-only" aria-hidden="true"></i><span class="fa-fallback">⚠</span> 样本不足</span>' : '') +
-      '</div>';
-    tbox.appendChild(div);
-  });
+      '<div class="trig-meta">' + v.sympt + '/' + v.total + ' 次食用后出现症状</div>';
+    return div;
+  };
+  risky.forEach(([n,v])=> tbox.appendChild(mkRow(n,v)));
+
+  if(safe.length){
+    const det = document.createElement('details');
+    det.className = 'safe-fold';
+    det.innerHTML =
+      '<summary><i class="fa-solid fa-circle-chevron-down fa-only" aria-hidden="true"></i><span class="fa-fallback">▾</span> 绿色安心食材（' + safe.length + ' 种，食用后未出现症状）</summary>';
+    const inner = document.createElement('div');
+    inner.className = 'safe-list';
+    safe.forEach(([n,v])=> inner.appendChild(mkRow(n,v)));
+    det.appendChild(inner);
+    tbox.appendChild(det);
+  }
 }
 
 /* ==================================================================
