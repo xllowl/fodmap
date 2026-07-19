@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f5f6fa">
+<title>FODMAP 饮食追踪</title>
+<style>
+/* ============ 基础样式：移动端优先、浅色圆角卡片 ============ */
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:16px}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;
+  background:#f5f6fa;color:#2c2c2e;padding-bottom:calc(64px + env(safe-area-inset-bottom));
+}
+header{
+  position:sticky;top:0;z-index:10;background:#f5f6fa;
+  padding:calc(10px + env(safe-area-inset-top)) 16px 10px;
+  font-size:1.15rem;font-weight:700;text-align:center;
+}
+main{max-width:560px;margin:0 auto;padding:0 12px}
+section.tabpage{display:none}
+section.tabpage.active{display:block}
+.card{
+  background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;
+  box-shadow:0 1px 4px rgba(0,0,0,.06);
+}
+.card h2{font-size:1rem;margin-bottom:10px;color:#1c1c1e}
+.card .sub{font-size:.8rem;color:#8e8e93;margin-top:-6px;margin-bottom:10px}
+button{font-family:inherit;cursor:pointer;border:none;border-radius:10px}
+.btn-primary{
+  width:100%;padding:13px;background:#4a7cff;color:#fff;
+  font-size:1rem;font-weight:600;border-radius:12px;
+}
+.btn-primary:disabled{background:#a9bcff}
+.btn-ghost{padding:8px 14px;background:#eef1f7;color:#4a7cff;font-size:.85rem;border-radius:10px}
+.btn-danger{padding:8px 14px;background:#fdecec;color:#e74c3c;font-size:.85rem;border-radius:10px}
+input[type=text],input[type=password],input[type=url],input[type=datetime-local],textarea,select{
+  width:100%;padding:11px 12px;border:1px solid #e2e4ea;border-radius:10px;
+  font-size:1rem;background:#fafbfc;font-family:inherit;
+}
+input:focus,textarea:focus{outline:none;border-color:#4a7cff}
+label.field{display:block;margin-bottom:12px;font-size:.85rem;color:#6d6d72}
+label.field input,label.field textarea{margin-top:5px}
+.hint{font-size:.75rem;color:#8e8e93;margin-top:4px}
+.row{display:flex;gap:8px;align-items:center}
+
+/* ============ 底部 Tab 导航 ============ */
+nav#tabbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:20;
+  display:flex;background:#fff;border-top:1px solid #e8e9ee;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+nav#tabbar button{
+  flex:1;background:none;padding:8px 0 6px;font-size:.7rem;color:#8e8e93;
+  display:flex;flex-direction:column;align-items:center;gap:2px;border-radius:0;
+}
+nav#tabbar button .ico{font-size:1.3rem}
+nav#tabbar button.active{color:#4a7cff;font-weight:600}
+
+/* ============ 拍照区 ============ */
+.photo-btn{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  flex:1;padding:22px 8px;border:2px dashed #c9d4ff;border-radius:12px;
+  background:#f7f9ff;color:#4a7cff;font-size:.9rem;cursor:pointer;
+}
+.photo-btn .ico{font-size:1.8rem}
+.photo-btns{display:flex;gap:10px}
+#photoPreview{width:100%;border-radius:12px;display:block}
+.preview-wrap{position:relative}
+.preview-wrap .re-pick{
+  position:absolute;right:8px;top:8px;background:rgba(0,0,0,.55);color:#fff;
+  padding:5px 10px;font-size:.75rem;border-radius:8px;
+}
+
+/* ============ 食材确认列表 ============ */
+.ing-row{
+  display:flex;align-items:center;gap:8px;padding:10px 2px;
+  border-bottom:1px solid #f0f1f5;
+}
+.ing-row:last-child{border-bottom:none}
+.dot{width:18px;height:18px;border-radius:50%;flex:none;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.12)}
+.dot-high{background:#e74c3c}.dot-medium{background:#f1c40f}.dot-low{background:#2ecc71}.dot-unknown{background:#d1d1d6}
+.ing-main{flex:1;min-width:0}
+.ing-name{font-size:.95rem}
+.ing-note{display:block;font-size:.7rem;color:#8e8e93}
+.tag-inferred{
+  background:#fff4e0;color:#e67e22;font-size:.68rem;padding:2px 7px;
+  border-radius:6px;margin-left:6px;vertical-align:1px;
+}
+.amt{
+  background:#eef1f7;color:#4a4a4e;font-size:.8rem;padding:6px 10px;
+  border-radius:8px;flex:none;min-width:52px;
+}
+.ing-del{color:#c7c7cc;font-size:1rem;padding:6px 8px;background:none;flex:none}
+.add-ing{display:flex;gap:8px;margin-top:10px}
+.add-ing input{flex:1}
+.add-ing button{flex:none}
+
+/* ============ 模板区 ============ */
+.tpl-scroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+.tpl-chip{
+  flex:none;display:flex;align-items:center;gap:6px;background:#eef3ff;color:#35507a;
+  padding:9px 12px;border-radius:20px;font-size:.85rem;
+}
+.tpl-chip .x{color:#9db3d8;font-size:.9rem;padding:0 2px}
+.empty-tip{color:#b0b0b6;font-size:.85rem;padding:6px 2px}
+
+/* ============ 症状 chips ============ */
+.sym-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.sym-chips button{
+  padding:9px 16px;border-radius:20px;background:#eef1f7;font-size:.9rem;color:#4a4a4e;
+}
+.sym-chips button.sel{background:#4a7cff;color:#fff;font-weight:600}
+.sev-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.sev-row input[type=range]{flex:1;accent-color:#4a7cff}
+.sev-val{font-size:1.1rem;font-weight:700;color:#4a7cff;min-width:48px;text-align:center}
+
+/* ============ 时间线 ============ */
+.day-title{font-size:.85rem;font-weight:700;color:#8e8e93;margin:16px 4px 8px}
+.tl-item{position:relative;overflow:hidden;border-radius:14px;margin-bottom:10px}
+.tl-del{
+  position:absolute;right:0;top:0;bottom:0;width:76px;background:#e74c3c;color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:.9rem;border-radius:0;
+}
+.tl-body{
+  position:relative;background:#fff;border-radius:14px;padding:12px 14px;
+  box-shadow:0 1px 4px rgba(0,0,0,.06);transition:transform .15s ease;
+  touch-action:pan-y;
+}
+.tl-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.tl-time{font-size:.8rem;color:#8e8e93;flex:none;background:#f0f1f5;border:none;padding:3px 8px;border-radius:7px}
+.tl-dish{font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tl-thumb{width:40px;height:40px;object-fit:cover;border-radius:8px;flex:none}
+.tl-chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{
+  font-size:.75rem;padding:3px 9px;border-radius:12px;background:#f4f5f8;
+  border-left:4px solid #d1d1d6;color:#4a4a4e;
+}
+.chip.high{border-left-color:#e74c3c;background:#fdecec}
+.chip.medium{border-left-color:#f1c40f;background:#fdf8e1}
+.chip.low{border-left-color:#2ecc71;background:#e9f9f0}
+.chip .inf{color:#e67e22}
+.tl-note{font-size:.78rem;color:#8e8e93;margin-top:6px}
+.tl-sym{display:flex;align-items:center;gap:8px}
+.tl-sym .ico{font-size:1.2rem}
+.sev-badge{margin-left:auto;font-size:.8rem;font-weight:700;padding:3px 9px;border-radius:10px;background:#fdecec;color:#e74c3c}
+
+/* ============ 统计 ============ */
+.stat-bar{display:flex;height:22px;border-radius:11px;overflow:hidden;margin:8px 0 10px}
+.stat-bar div{transition:width .3s}
+.legend{display:flex;gap:14px;font-size:.8rem;color:#6d6d72;flex-wrap:wrap}
+.trig-row{padding:10px 2px;border-bottom:1px solid #f0f1f5}
+.trig-row:last-child{border-bottom:none}
+.trig-top{display:flex;align-items:center;gap:8px}
+.trig-name{font-size:.92rem;flex:1}
+.trig-rate{font-weight:700;font-size:.9rem}
+.trig-bar{height:6px;border-radius:3px;background:#f0f1f5;margin-top:6px}
+.trig-bar i{display:block;height:100%;border-radius:3px;background:#e74c3c}
+.trig-meta{font-size:.72rem;color:#8e8e93;margin-top:4px}
+.low-sample{color:#e67e22;margin-left:6px}
+
+/* ============ 我的 ============ */
+.me-row{display:flex;gap:8px;flex-wrap:wrap}
+.me-row button{flex:1;min-width:45%}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.toast{
+  position:fixed;left:50%;bottom:90px;transform:translateX(-50%);
+  background:rgba(0,0,0,.78);color:#fff;padding:10px 18px;border-radius:10px;
+  font-size:.85rem;z-index:99;max-width:86%;text-align:center;
+}
+/* ============ 日历视图 ============ */
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cal-nav{width:36px;height:32px;background:#eef1f7;color:#4a7cff;font-size:1.1rem;border-radius:8px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-week{font-size:.72rem;color:#8e8e93;text-align:center;margin-bottom:4px}
+.cal-cell{
+  aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+  font-size:.82rem;border-radius:8px;background:#fafbfc;color:#4a4a4e;position:relative;
+}
+.cal-cell.other{color:#c7c7cc;background:transparent}
+.cal-cell.today{box-shadow:inset 0 0 0 1.5px #4a7cff;font-weight:700}
+.cal-cell.has-sym{color:#fff;font-weight:600}
+.cal-cell.no-sym{background:#e8f5e9}
+.cal-cell .meal-dot{position:absolute;bottom:3px;width:4px;height:4px;border-radius:50%;background:#4a7cff}
+.cal-dot{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:-1px;margin-right:3px}
+
+/* 通用模态对话框（替代不兼容的 prompt/confirm） */
+#modalMask{
+  display:none;position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.4);
+  align-items:center;justify-content:center;padding:24px;
+}
+#modalMask.show{display:flex}
+.modal-box{background:#fff;border-radius:16px;padding:18px;width:100%;max-width:340px}
+.modal-box h3{font-size:1rem;margin-bottom:8px}
+.modal-box .mdesc{font-size:.85rem;color:#6d6d72;margin-bottom:12px}
+.modal-btns{display:flex;gap:8px;margin-top:14px}
+.modal-btns button{flex:1;padding:11px;font-size:.95rem;border-radius:10px}
+.modal-btns .m-ok{background:#4a7cff;color:#fff;font-weight:600}
+.modal-btns .m-cancel{background:#eef1f7;color:#4a4a4e}
+</style>
+</head>
+<body>
+
+<header>FODMAP 饮食追踪</header>
+
+<main>
+<!-- ================= Tab1 记录 ================= -->
+<section id="page-record" class="tabpage active">
+
+  <div class="card">
+    <h2>📷 饮食记录</h2>
+    <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none">
+    <input type="file" id="galleryInput" accept="image/*" style="display:none">
+    <div id="photoArea"></div>
+    <div style="height:10px"></div>
+    <label class="field">备注
+      <input type="text" id="noteInput" placeholder="如：外卖，备注免蒜">
+    </label>
+    <button class="btn-primary" id="analyzeBtn">分析食材</button>
+    <div class="hint">需先在「我的」页配置 API。分析结果可手动修正后再保存。</div>
+  </div>
+
+  <!-- 确认界面（分析后显示） -->
+  <div class="card" id="confirmCard" style="display:none">
+    <h2>✅ 确认食材</h2>
+    <div class="sub">点色点改级别（🔴高 🟡中 🟢低 ⚪未知），手动定级会自动记住，下次同食材自动带出</div>
+    <label class="field">菜名
+      <input type="text" id="dishInput">
+    </label>
+    <label class="field">用餐时间
+      <input type="datetime-local" id="mealTimeInput">
+    </label>
+    <div id="ingList"></div>
+    <div class="add-ing">
+      <input type="text" id="addIngInput" placeholder="手动添加食材">
+      <button class="btn-ghost" id="addIngBtn">添加</button>
+    </div>
+    <div style="height:12px"></div>
+    <button class="btn-primary" id="saveMealBtn">保存记录</button>
+  </div>
+
+  <div class="card">
+    <h2>⭐ 模板快捷区</h2>
+    <div class="tpl-scroll" id="tplList"></div>
+  </div>
+
+  <div class="card">
+    <h2>🩺 症状记录</h2>
+    <div class="sym-chips" id="symChips"></div>
+    <div class="sev-row">
+      <span style="font-size:.85rem;color:#6d6d72">严重度</span>
+      <input type="range" id="sevSlider" min="1" max="10" value="5">
+      <span class="sev-val" id="sevVal">5/10</span>
+    </div>
+    <label class="field">备注（可选）
+      <input type="text" id="symNote" placeholder="如：午饭后一小时开始">
+    </label>
+    <button class="btn-primary" id="saveSymBtn">保存症状</button>
+  </div>
+</section>
+
+<!-- ================= Tab2 时间线 ================= -->
+<section id="page-timeline" class="tabpage">
+  <div class="card">
+    <div class="cal-head">
+      <button id="calPrev" class="cal-nav">‹</button>
+      <span id="calTitle" style="font-weight:700"></span>
+      <button id="calNext" class="cal-nav">›</button>
+    </div>
+    <div class="cal-grid cal-week">
+      <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="legend" style="margin-top:10px">
+      <span><i class="cal-dot" style="background:#ffcdd2"></i>轻(1-3)</span>
+      <span><i class="cal-dot" style="background:#ef9a9a"></i>中(4-6)</span>
+      <span><i class="cal-dot" style="background:#e74c3c"></i>重(7-10)</span>
+      <span><i class="cal-dot" style="background:#e8f5e9"></i>无症状</span>
+    </div>
+  </div>
+  <div class="card" style="font-size:.8rem;color:#8e8e93">左滑任意条目可删除</div>
+  <div id="timelineList"></div>
+</section>
+
+<!-- ================= Tab3 统计 ================= -->
+<section id="page-stats" class="tabpage">
+  <div class="card">
+    <h2>📊 近 30 天 FODMAP 餐次占比</h2>
+    <div id="levelStats"></div>
+  </div>
+  <div class="card">
+    <h2>🔍 食材触发分析</h2>
+    <div class="sub">食用后 24 小时内出现症状的比例（仅统计出现 ≥2 次的食材）</div>
+    <div id="trigStats"></div>
+  </div>
+</section>
+
+<!-- ================= Tab4 我的 ================= -->
+<section id="page-me" class="tabpage">
+  <div class="card">
+    <h2>⚙️ API 设置</h2>
+    <label class="field">Base URL
+      <input type="url" id="setBaseUrl" placeholder="https://api.openai.com/v1/chat/completions">
+      <div class="hint">可改通义千问/智谱等 OpenAI 兼容接口</div>
+    </label>
+    <label class="field">API Key
+      <input type="password" id="setApiKey" placeholder="sk-...">
+    </label>
+    <label class="field">模型名
+      <input type="text" id="setModel" placeholder="gpt-4o">
+      <div class="hint">或 qwen-vl-max / glm-4v 等</div>
+    </label>
+    <button class="btn-primary" id="saveSetBtn">保存设置</button>
+  </div>
+  <div class="card">
+    <h2>💾 数据管理</h2>
+    <div class="me-row">
+      <button class="btn-ghost" id="expJsonBtn">导出 JSON 备份</button>
+      <button class="btn-ghost" id="impJsonBtn">导入 JSON 恢复</button>
+      <button class="btn-ghost" id="expMdBtn">导出 Markdown</button>
+      <button class="btn-danger" id="clearBtn">清空数据</button>
+    </div>
+    <input type="file" id="impFileInput" accept="application/json" style="display:none">
+  </div>
+  <div class="card" style="font-size:.78rem;color:#8e8e93">
+    数据仅存于本机浏览器（IndexedDB），API Key 存于 localStorage，不会上传到任何服务器（除你配置的模型 API 外）。
+  </div>
+</section>
+</main>
+
+<!-- ================= 通用模态对话框 ================= -->
+<div id="modalMask">
+  <div class="modal-box">
+    <h3 id="modalTitle"></h3>
+    <div class="mdesc" id="modalDesc"></div>
+    <input type="text" id="modalInput" style="display:none">
+    <div class="modal-btns">
+      <button class="m-cancel" id="modalCancel">取消</button>
+      <button class="m-ok" id="modalOk">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 底部导航 ================= -->
+<nav id="tabbar">
+  <button data-tab="record" class="active"><span class="ico">📝</span>记录</button>
+  <button data-tab="timeline"><span class="ico">🕘</span>时间线</button>
+  <button data-tab="stats"><span class="ico">📊</span>统计</button>
+  <button data-tab="me"><span class="ico">⚙️</span>我的</button>
+</nav>
+
+<script>
+'use strict';
+/* ==================================================================
+ * FODMAP 本地数据库（JS 常量嵌入，离线可查）
+ * level: high=高 medium=中 low=低 unknown=未知
+ * ================================================================== */
+const FODMAP_DB = [
+  {name:"洋葱",alias:["圆葱"],cat:"蔬菜",level:"high"},
+  {name:"大蒜",alias:["蒜","蒜头"],cat:"蔬菜",level:"high"},
+  {name:"葱白",alias:["大葱"],cat:"蔬菜",level:"high"},
+  {name:"葱绿",alias:[],cat:"蔬菜",level:"low",note:"替代葱白"},
+  {name:"韭菜",alias:[],cat:"蔬菜",level:"high"},
+  {name:"蒜油",alias:["葱油"],cat:"调料",level:"low",note:"FODMAP不溶于油,弃渣"},
+  {name:"芦笋",alias:[],cat:"蔬菜",level:"high"},
+  {name:"菜花",alias:["花菜"],cat:"蔬菜",level:"high"},
+  {name:"香菇",alias:["口蘑","金针菇","蘑菇"],cat:"蔬菜",level:"high",note:"平菇除外"},
+  {name:"平菇",alias:[],cat:"蔬菜",level:"low"},
+  {name:"芹菜",alias:[],cat:"蔬菜",level:"medium",note:"调味量OK,整根吃高"},
+  {name:"西兰花",alias:[],cat:"蔬菜",level:"medium",note:"≤75g低"},
+  {name:"红薯",alias:["地瓜"],cat:"蔬菜",level:"medium",note:"≤半个低"},
+  {name:"胡萝卜",alias:[],cat:"蔬菜",level:"low"},
+  {name:"黄瓜",alias:[],cat:"蔬菜",level:"low"},
+  {name:"番茄",alias:["西红柿"],cat:"蔬菜",level:"low"},
+  {name:"土豆",alias:["马铃薯"],cat:"蔬菜",level:"low"},
+  {name:"茄子",alias:[],cat:"蔬菜",level:"low"},
+  {name:"白菜",alias:["大白菜","小白菜","青菜"],cat:"蔬菜",level:"low"},
+  {name:"菠菜",alias:[],cat:"蔬菜",level:"low"},
+  {name:"生菜",alias:[],cat:"蔬菜",level:"low"},
+  {name:"白萝卜",alias:[],cat:"蔬菜",level:"low"},
+  {name:"竹笋",alias:[],cat:"蔬菜",level:"low"},
+  {name:"苹果",alias:[],cat:"水果",level:"high"},
+  {name:"梨",alias:[],cat:"水果",level:"high"},
+  {name:"西瓜",alias:[],cat:"水果",level:"high"},
+  {name:"芒果",alias:[],cat:"水果",level:"high"},
+  {name:"桃",alias:["油桃"],cat:"水果",level:"high"},
+  {name:"柿子",alias:[],cat:"水果",level:"high"},
+  {name:"红枣",alias:["葡萄干"],cat:"水果",level:"high"},
+  {name:"香蕉",alias:[],cat:"水果",level:"medium",note:"刚熟低,过熟长斑高"},
+  {name:"牛油果",alias:[],cat:"水果",level:"medium",note:"1/8个低"},
+  {name:"橙子",alias:["橘子"],cat:"水果",level:"low"},
+  {name:"葡萄",alias:[],cat:"水果",level:"low"},
+  {name:"草莓",alias:[],cat:"水果",level:"low"},
+  {name:"猕猴桃",alias:[],cat:"水果",level:"low"},
+  {name:"火龙果",alias:[],cat:"水果",level:"low"},
+  {name:"菠萝",alias:[],cat:"水果",level:"low"},
+  {name:"猪肉",alias:[],cat:"肉蛋",level:"low"},
+  {name:"牛肉",alias:[],cat:"肉蛋",level:"low"},
+  {name:"鸡肉",alias:[],cat:"肉蛋",level:"low"},
+  {name:"鱼虾",alias:["鱼","虾"],cat:"肉蛋",level:"low"},
+  {name:"鸡蛋",alias:["蛋"],cat:"肉蛋",level:"low"},
+  {name:"老豆腐",alias:["北豆腐","豆干"],cat:"豆制",level:"low"},
+  {name:"嫩豆腐",alias:["绢豆腐","内酯豆腐"],cat:"豆制",level:"high"},
+  {name:"豆浆",alias:[],cat:"豆制",level:"medium",note:"全豆现磨偏高"},
+  {name:"红豆",alias:["绿豆","芸豆"],cat:"豆制",level:"high"},
+  {name:"米饭",alias:["大米","粥"],cat:"主食",level:"low"},
+  {name:"米粉",alias:["米线","河粉","粉丝"],cat:"主食",level:"low"},
+  {name:"糯米",alias:[],cat:"主食",level:"low"},
+  {name:"燕麦",alias:[],cat:"主食",level:"low"},
+  {name:"面条",alias:["拉面","挂面"],cat:"主食",level:"high",note:"正常分量即高"},
+  {name:"馒头",alias:["花卷"],cat:"主食",level:"high"},
+  {name:"包子皮",alias:["饺子皮","馄饨皮"],cat:"主食",level:"high"},
+  {name:"面包",alias:[],cat:"主食",level:"high"},
+  {name:"油条",alias:[],cat:"主食",level:"high"},
+  {name:"牛奶",alias:[],cat:"乳制",level:"high"},
+  {name:"奶茶",alias:[],cat:"乳制",level:"high"},
+  {name:"无乳糖牛奶",alias:[],cat:"乳制",level:"low"},
+  {name:"黄油",alias:[],cat:"乳制",level:"low"},
+  {name:"姜",alias:["生姜"],cat:"调料",level:"low"},
+  {name:"酱油",alias:[],cat:"调料",level:"low"},
+  {name:"醋",alias:[],cat:"调料",level:"low"},
+  {name:"料酒",alias:[],cat:"调料",level:"low"},
+  {name:"辣椒",alias:[],cat:"调料",level:"low",note:"辣椒素另刺激肠道,单独追踪"},
+  {name:"花椒",alias:["八角","桂皮","孜然"],cat:"调料",level:"low"},
+  {name:"蜂蜜",alias:[],cat:"调料",level:"high"},
+  {name:"浓汤宝",alias:["高汤块","火锅底料"],cat:"调料",level:"high",note:"含葱蒜"},
+  {name:"豆瓣酱",alias:[],cat:"调料",level:"unknown",note:"少量大概率可,实测"}
+];
+
+/* 用户自定义食材级别（localStorage）：手动定级后自动记忆，查表优先级最高 */
+const CUSTOM_KEY = 'fodmap_custom';
+function loadCustom(){
+  try{ return JSON.parse(localStorage.getItem(CUSTOM_KEY)) || {}; }catch(e){ return {}; }
+}
+function saveCustomLevel(name, level){
+  const c = loadCustom();
+  c[(name||'').trim()] = level;
+  localStorage.setItem(CUSTOM_KEY, JSON.stringify(c));
+}
+
+/* 查表顺序：用户自定义表 → 内置表 name → 内置表 alias，查不到返回 null */
+function lookupFodmap(name){
+  const n = (name||'').trim();
+  if(!n) return null;
+  const c = loadCustom();
+  if(c[n]) return {name: n, alias: [], cat: '自定义', level: c[n], custom: true};
+  let hit = FODMAP_DB.find(e => e.name === n);
+  if(!hit) hit = FODMAP_DB.find(e => e.alias && e.alias.includes(n));
+  return hit || null;
+}
+function fodmapLevel(name){ const h = lookupFodmap(name); return h ? h.level : 'unknown'; }
+/* 归一化名称（别名 → 正名），用于统计聚合 */
+function canonName(name){ const h = lookupFodmap(name); return h ? h.name : (name||'').trim(); }
+
+/* 大模型系统提示词（按需求原文） */
+const SYS_PROMPT = `你是IBS饮食记录助手。根据照片和备注，输出这餐的食材清单，用于FODMAP追踪。
+要求：
+1. 列出可见食材；并根据该菜式典型做法补充可能的隐形食材
+   （葱/蒜/洋葱/高汤/酱料），标注 inferred:true
+2. 每种食材估计量级：少量/中等/大量，不估克数
+3. 只输出JSON，无其他文字：
+   {"dish":"菜名","ingredients":[{"name":"食材","amount":"少量","inferred":false}]}
+4. 食材用通用中文名（如"西红柿"→"番茄"），便于查表
+5. 只做客观成分提取，不给任何饮食建议`;
+
+/* ==================================================================
+ * 工具函数
+ * ================================================================== */
+const $ = id => document.getElementById(id);
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function pad(n){ return String(n).padStart(2,'0'); }
+function dayKey(ts){ const d=new Date(ts); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function hm(ts){ const d=new Date(ts); return pad(d.getHours())+':'+pad(d.getMinutes()); }
+function dtLocalVal(ts){ const d=new Date(ts); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes()); }
+const LEVEL_EMOJI = {high:'🔴',medium:'🟡',low:'🟢',unknown:'⚪'};
+const LEVEL_TEXT  = {high:'高',medium:'中',low:'低',unknown:'未知'};
+const LEVEL_ORDER = {unknown:0,low:1,medium:2,high:3};
+const AMT_SHORT   = {'少量':'少','中等':'中','大量':'大'};
+const AMT_CYCLE   = ['少量','中等','大量'];
+const LVL_CYCLE   = ['unknown','low','medium','high'];
+function toast(msg,ms=2200){
+  const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
+  document.body.appendChild(t); setTimeout(()=>t.remove(), ms);
+}
+/* 通用模态对话框：showConfirm 返回 Promise<boolean>；showPrompt 返回 Promise<string|null> */
+function showModal({title, desc='', input=null, inputType='text'}){
+  return new Promise(resolve=>{
+    $('modalTitle').textContent = title;
+    $('modalDesc').textContent = desc;
+    const inp = $('modalInput');
+    inp.type = inputType;
+    inp.style.display = input === null ? 'none' : 'block';
+    inp.value = input || '';
+    $('modalMask').classList.add('show');
+    const done = val=>{
+      $('modalMask').classList.remove('show');
+      $('modalOk').onclick = $('modalCancel').onclick = null;
+      inp.type = 'text';
+      resolve(val);
+    };
+    $('modalOk').onclick = ()=> done(input === null ? true : inp.value.trim() || null);
+    $('modalCancel').onclick = ()=> done(input === null ? false : null);
+    if(input !== null) setTimeout(()=> inp.focus(), 50);
+  });
+}
+const showConfirm = (title, desc)=> showModal({title, desc});
+const showPrompt  = (title, desc, def)=> showModal({title, desc, input: def || ''});
+
+function download(filename, content, mime){
+  const blob = new Blob([content], {type: mime||'text/plain;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+
+/* ==================================================================
+ * IndexedDB 封装：meals / symptoms / templates 三个 store
+ * ================================================================== */
+let db = null;
+function openDB(){
+  return new Promise((res, rej)=>{
+    const r = indexedDB.open('fodmap-db', 1);
+    r.onupgradeneeded = e=>{
+      const d = e.target.result;
+      ['meals','symptoms','templates'].forEach(s=>{
+        if(!d.objectStoreNames.contains(s)) d.createObjectStore(s, {keyPath:'id', autoIncrement:true});
+      });
+    };
+    r.onsuccess = e=>{ db = e.target.result; res(db); };
+    r.onerror = ()=>rej(r.error);
+  });
+}
+const store = (s,mode)=> db.transaction(s, mode).objectStore(s);
+const dbAdd = (s,v)=> new Promise((res,rej)=>{ const r=store(s,'readwrite').add(v); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); });
+const dbPut = (s,v)=> new Promise((res,rej)=>{ const r=store(s,'readwrite').put(v); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); });
+const dbDel = (s,id)=> new Promise((res,rej)=>{ const r=store(s,'readwrite').delete(id); r.onsuccess=()=>res(); r.onerror=()=>rej(r.error); });
+const dbAll = s=> new Promise((res,rej)=>{ const r=store(s,'readonly').getAll(); r.onsuccess=()=>res(r.result||[]); r.onerror=()=>rej(r.error); });
+const dbClear = s=> new Promise((res,rej)=>{ const r=store(s,'readwrite').clear(); r.onsuccess=()=>res(); r.onerror=()=>rej(r.error); });
+
+/* ==================================================================
+ * 设置（localStorage）
+ * ================================================================== */
+const SET_KEY = 'fodmap_settings';
+const DEFAULT_BASE_URL = 'https://api.openai.com/v1/chat/completions';
+function loadSettings(){
+  let s = {};
+  try{ s = JSON.parse(localStorage.getItem(SET_KEY)) || {}; }catch(e){}
+  return { baseUrl: s.baseUrl || DEFAULT_BASE_URL, apiKey: s.apiKey || '', model: s.model || 'gpt-4o' };
+}
+function saveSettings(s){ localStorage.setItem(SET_KEY, JSON.stringify(s)); }
+
+/* ==================================================================
+ * Tab 切换
+ * ================================================================== */
+document.querySelectorAll('#tabbar button').forEach(btn=>{
+  btn.addEventListener('click', ()=> switchTab(btn.dataset.tab));
+});
+function switchTab(tab){
+  document.querySelectorAll('#tabbar button').forEach(b=> b.classList.toggle('active', b.dataset.tab===tab));
+  document.querySelectorAll('section.tabpage').forEach(p=> p.classList.toggle('active', p.id==='page-'+tab));
+  if(tab==='timeline') renderTimeline();
+  if(tab==='stats') renderStats();
+  window.scrollTo(0,0);
+}
+
+/* ==================================================================
+ * Tab1 - 拍照与图片预处理
+ * ================================================================== */
+const state = {
+  photo: null,      // 1024px base64（发 API 用）
+  thumb: null,      // 200px base64（存库用）
+  parsed: null      // 待确认的解析结果 {dish, ingredients:[{name,amount,inferred,fodmap,manualLevel}]}
+};
+
+/* 拍照/相册两个入口：带 capture 的走相机，不带的走相册 */
+function renderPhotoPicker(){
+  $('photoArea').innerHTML =
+    '<div class="photo-btns">' +
+      '<button class="photo-btn" id="takeBtn"><span class="ico">📸</span><span>拍照</span></button>' +
+      '<button class="photo-btn" id="pickBtn"><span class="ico">🖼️</span><span>从相册选择</span></button>' +
+    '</div>';
+  $('takeBtn').addEventListener('click', ()=> $('photoInput').click());
+  $('pickBtn').addEventListener('click', ()=> $('galleryInput').click());
+}
+async function onPhotoPicked(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  try{
+    const {full, thumb} = await processImage(file);
+    state.photo = full; state.thumb = thumb;
+    $('photoArea').innerHTML =
+      '<div class="preview-wrap"><img id="photoPreview" src="'+full+'">' +
+      '<button class="re-pick" id="rePickBtn">重选</button></div>';
+    $('rePickBtn').addEventListener('click', renderPhotoPicker);
+  }catch(err){ toast('图片读取失败，请换一张'); }
+  e.target.value = '';
+}
+$('photoInput').addEventListener('change', onPhotoPicked);
+$('galleryInput').addEventListener('change', onPhotoPicked);
+
+/* canvas 缩放：最长边 1024px，JPEG 0.7 → base64；同时生成 200px 缩略图 */
+function processImage(file){
+  return new Promise((res, rej)=>{
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = ()=>{
+      const mk = (max, q)=>{
+        const sc = Math.min(1, max / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width*sc)), h = Math.max(1, Math.round(img.height*sc));
+        const c = document.createElement('canvas'); c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        return c.toDataURL('image/jpeg', q);
+      };
+      const full = mk(1024, 0.7), thumb = mk(200, 0.6);
+      URL.revokeObjectURL(url);
+      res({full, thumb});
+    };
+    img.onerror = rej;
+    img.src = url;
+  });
+}
+
+/* ==================================================================
+ * Tab1 - 调用多模态 LLM 分析食材（OpenAI 兼容 chat completions）
+ * ================================================================== */
+$('analyzeBtn').addEventListener('click', analyze);
+async function analyze(){
+  const s = loadSettings();
+  if(!s.apiKey){
+    if(await showConfirm('未配置 API', '尚未填写 API Key，是否前往「我的」页面设置？')) switchTab('me');
+    return;
+  }
+  if(!state.photo && !$('noteInput').value.trim()){
+    toast('请先拍照或填写备注'); return;
+  }
+  const btn = $('analyzeBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>分析中…';
+  try{
+    // 组装 user message：base64 图放 image_url 字段
+    const userContent = [];
+    if(state.photo) userContent.push({type:'image_url', image_url:{url: state.photo}});
+    const note = $('noteInput').value.trim();
+    userContent.push({type:'text', text:
+      '备注：' + (note || '（无）') +
+      (state.photo ? '\n请分析照片中的这餐。' : '\n（无照片，请根据备注推断这餐最可能的食材）')});
+    const resp = await fetch(s.baseUrl, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + s.apiKey },
+      body: JSON.stringify({
+        model: s.model,
+        messages: [
+          {role:'system', content: SYS_PROMPT},
+          {role:'user',   content: userContent}
+        ],
+        temperature: 0.2
+      })
+    });
+    if(!resp.ok){
+      const t = await resp.text().catch(()=> '');
+      throw new Error('API 返回 ' + resp.status + '：' + t.slice(0, 150));
+    }
+    const data = await resp.json();
+    const content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+    if(!content) throw new Error('API 返回结构异常');
+    state.parsed = parseLLM(content);
+    renderConfirm();
+    toast('分析完成，请确认食材');
+  }catch(err){
+    alert('分析失败：' + err.message + '\n\n可检查网络/Key 后点击「分析食材」重试。');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = '分析食材';
+  }
+}
+
+/* 容错解析：剥掉 ```json 包裹与多余文本，截取第一个 { 到最后一个 } */
+function parseLLM(text){
+  const t = text.replace(/```(?:json)?/gi, '');
+  const i = t.indexOf('{'), j = t.lastIndexOf('}');
+  if(i < 0 || j <= i) throw new Error('返回内容中未找到 JSON，可重试');
+  let obj;
+  try{ obj = JSON.parse(t.slice(i, j+1)); }
+  catch(e){ throw new Error('JSON 解析失败，可重试'); }
+  if(!obj || !Array.isArray(obj.ingredients)) throw new Error('JSON 缺少 ingredients 字段');
+  obj.dish = String(obj.dish || '未命名');
+  obj.ingredients = obj.ingredients
+    .filter(g => g && String(g.name||'').trim())
+    .map(g => {
+      const name = String(g.name).trim();
+      return {
+        name,
+        amount: AMT_CYCLE.includes(g.amount) ? g.amount : '中等',
+        inferred: !!g.inferred,
+        fodmap: fodmapLevel(name),   // 查本地表自动标注
+        manualLevel: false            // 是否被手动改过级别
+      };
+    });
+  return obj;
+}
+
+/* ==================================================================
+ * Tab1 - 确认界面（可编辑菜名/量级/推测标记/级别/增删）
+ * ================================================================== */
+function renderConfirm(){
+  if(!state.parsed){ $('confirmCard').style.display='none'; return; }
+  $('confirmCard').style.display = 'block';
+  $('dishInput').value = state.parsed.dish;
+  if(!$('mealTimeInput').value) $('mealTimeInput').value = dtLocalVal(Date.now());
+  renderIngList();
+}
+function renderIngList(){
+  const list = $('ingList');
+  list.innerHTML = '';
+  state.parsed.ingredients.forEach((g, idx)=>{
+    const hit = lookupFodmap(g.name);
+    const row = document.createElement('div');
+    row.className = 'ing-row';
+    row.innerHTML =
+      '<button class="dot dot-' + g.fodmap + '" data-act="level" title="点按切换 高/中/低"></button>' +
+      '<div class="ing-main">' +
+        '<span class="ing-name">' + esc(g.name) + '</span>' +
+        (g.inferred ? '<button class="tag-inferred" data-act="inferred" title="点按取消推测标记">推测</button>' : '') +
+        (hit && hit.note ? '<span class="ing-note">' + esc(hit.note) + '</span>' : '') +
+        (!hit ? '<span class="ing-note">本地表未收录，点左侧圆点手动定级</span>' : '') +
+      '</div>' +
+      '<button class="amt" data-act="amount">' + esc(g.amount) + '</button>' +
+      '<button class="ing-del" data-act="del">✕</button>';
+    row.querySelectorAll('[data-act]').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const act = el.dataset.act;
+        if(act==='level'){ // 级别循环：未知→低→中→高，手动定级自动记忆到自定义表
+          g.fodmap = LVL_CYCLE[(LVL_CYCLE.indexOf(g.fodmap)+1) % LVL_CYCLE.length];
+          g.manualLevel = true;
+          saveCustomLevel(g.name, g.fodmap);
+        }
+        if(act==='amount'){ // 量级循环：少→中→大
+          g.amount = AMT_CYCLE[(AMT_CYCLE.indexOf(g.amount)+1) % AMT_CYCLE.length];
+        }
+        if(act==='inferred'){ g.inferred = false; }
+        if(act==='del'){ state.parsed.ingredients.splice(idx, 1); }
+        renderIngList();
+      });
+    });
+    list.appendChild(row);
+  });
+}
+$('addIngBtn').addEventListener('click', ()=>{
+  const name = $('addIngInput').value.trim();
+  if(!name || !state.parsed) return;
+  state.parsed.ingredients.push({name, amount:'中等', inferred:false, fodmap: fodmapLevel(name), manualLevel:false});
+  $('addIngInput').value = '';
+  renderIngList();
+});
+$('dishInput').addEventListener('input', ()=>{ if(state.parsed) state.parsed.dish = $('dishInput').value; });
+
+/* 保存饮食记录 → IndexedDB，并询问是否存为模板 */
+$('saveMealBtn').addEventListener('click', async ()=>{
+  if(!state.parsed) return;
+  const dish = $('dishInput').value.trim() || '未命名';
+  if(!state.parsed.ingredients.length){ toast('食材列表为空'); return; }
+  const tVal = $('mealTimeInput').value;
+  const time = tVal ? new Date(tVal).getTime() : Date.now();
+  const ingredients = state.parsed.ingredients.map(g=>({
+    name: g.name, amount: g.amount, inferred: g.inferred, fodmap: g.fodmap
+  }));
+  // 当餐最高级别
+  const maxLevel = ingredients.reduce((m,g)=> LEVEL_ORDER[g.fodmap] > LEVEL_ORDER[m] ? g.fodmap : m, 'unknown');
+  await dbAdd('meals', {
+    time, dishName: dish, note: $('noteInput').value.trim(),
+    ingredients, maxLevel, thumbnail: state.thumb
+  });
+  // 询问存为模板
+  if(await showConfirm('已保存！', '要把「' + dish + '」存为模板吗？以后可一键记录同款。')){
+    const tname = await showPrompt('存为模板', '模板名称：', dish);
+    if(tname){
+      await dbAdd('templates', {name: tname, ingredients});
+      renderTemplates();
+    }
+  }
+  // 重置记录区
+  state.parsed = null; state.photo = null; state.thumb = null;
+  $('confirmCard').style.display = 'none';
+  $('noteInput').value = '';
+  $('mealTimeInput').value = '';
+  renderPhotoPicker();
+  toast('饮食记录已保存');
+});
+
+/* ==================================================================
+ * Tab1 - 模板快捷区：点击模板直接生成待确认记录
+ * ================================================================== */
+async function renderTemplates(){
+  const tpls = await dbAll('templates');
+  const box = $('tplList');
+  box.innerHTML = '';
+  if(!tpls.length){ box.innerHTML = '<div class="empty-tip">保存记录时可选择存为模板</div>'; return; }
+  tpls.sort((a,b)=>b.id-a.id).forEach(t=>{
+    const chip = document.createElement('button');
+    chip.className = 'tpl-chip';
+    chip.innerHTML = esc(t.name) + ' <span class="x" title="删除模板">✕</span>';
+    chip.addEventListener('click', async e=>{
+      if(e.target.classList.contains('x')){
+        if(await showConfirm('删除模板', '确认删除模板「' + t.name + '」？')){
+          await dbDel('templates', t.id); renderTemplates();
+        }
+        return;
+      }
+      // 生成可再编辑的待确认记录（无需拍照）
+      state.parsed = {
+        dish: t.name,
+        ingredients: t.ingredients.map(g=>({...g, manualLevel:false}))
+      };
+      $('mealTimeInput').value = dtLocalVal(Date.now());
+      renderConfirm();
+      $('confirmCard').scrollIntoView({behavior:'smooth'});
+      toast('已载入模板，可编辑后保存');
+    });
+    box.appendChild(chip);
+  });
+}
+
+/* ==================================================================
+ * Tab1 - 症状记录：chips + 滑块，两步完成
+ * ================================================================== */
+const SYM_TYPES = [
+  {t:'腹痛', i:'😣'}, {t:'腹胀', i:'🎈'}, {t:'腹泻', i:'💧'},
+  {t:'便秘', i:'🚫'}, {t:'产气', i:'💨'}, {t:'恶心', i:'🤢'}
+];
+let selSym = null;
+function renderSymChips(){
+  const box = $('symChips');
+  box.innerHTML = '';
+  SYM_TYPES.forEach(s=>{
+    const b = document.createElement('button');
+    b.textContent = s.i + ' ' + s.t;
+    b.className = selSym === s.t ? 'sel' : '';
+    b.addEventListener('click', ()=>{ selSym = s.t; renderSymChips(); });
+    box.appendChild(b);
+  });
+}
+$('sevSlider').addEventListener('input', ()=> $('sevVal').textContent = $('sevSlider').value + '/10');
+$('saveSymBtn').addEventListener('click', async ()=>{
+  if(!selSym){ toast('请先选择症状'); return; }
+  await dbAdd('symptoms', {
+    time: Date.now(), type: selSym,
+    severity: parseInt($('sevSlider').value, 10),
+    note: $('symNote').value.trim()
+  });
+  selSym = null; $('symNote').value = ''; $('sevSlider').value = 5; $('sevVal').textContent = '5/10';
+  renderSymChips();
+  toast('症状已记录');
+});
+
+/* ==================================================================
+ * Tab2 - 时间线：按天分组倒序，左滑删除
+ * ================================================================== */
+/* ============ 日历视图：每日症状着色 + 饮食小点 ============ */
+let calCursor = new Date(); // 当前显示的月份
+calCursor.setDate(1);
+function renderCalendar(meals, symps){
+  // 按天聚合：当日最高严重度 + 是否有饮食记录
+  const symMap = {}, mealSet = {};
+  symps.forEach(s=>{ const k = dayKey(s.time); symMap[k] = Math.max(symMap[k]||0, s.severity); });
+  meals.forEach(m=>{ mealSet[dayKey(m.time)] = true; });
+
+  const y = calCursor.getFullYear(), mo = calCursor.getMonth();
+  $('calTitle').textContent = y + ' 年 ' + (mo+1) + ' 月';
+  // 周一为一周第一天：计算 1 号前需补几个上月格子
+  const firstDow = (new Date(y, mo, 1).getDay() + 6) % 7;
+  const daysInMonth = new Date(y, mo+1, 0).getDate();
+  const grid = $('calGrid');
+  grid.innerHTML = '';
+  const todayK = dayKey(Date.now());
+  for(let i = 0; i < firstDow + daysInMonth; i++){
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell';
+    if(i < firstDow){ cell.classList.add('other'); }
+    else{
+      const d = i - firstDow + 1;
+      const k = y + '-' + pad(mo+1) + '-' + pad(d);
+      cell.textContent = d;
+      const sev = symMap[k];
+      if(sev){
+        cell.classList.add('has-sym');
+        cell.style.background = sev <= 3 ? '#ffcdd2' : sev <= 6 ? '#ef9a9a' : '#e74c3c';
+        cell.title = '当日最高症状严重度 ' + sev + '/10';
+      }else if(mealSet[k]){ cell.classList.add('no-sym'); } // 有饮食记录但无症状
+      if(k === todayK) cell.classList.add('today');
+      if(mealSet[k]){ const dot = document.createElement('span'); dot.className = 'meal-dot'; cell.appendChild(dot); }
+    }
+    grid.appendChild(cell);
+  }
+}
+$('calPrev').addEventListener('click', ()=>{ calCursor.setMonth(calCursor.getMonth()-1); renderTimeline(); });
+$('calNext').addEventListener('click', ()=>{ calCursor.setMonth(calCursor.getMonth()+1); renderTimeline(); });
+
+async function renderTimeline(){
+  const meals = (await dbAll('meals')).map(m=>({...m, _kind:'meal'}));
+  const symps = (await dbAll('symptoms')).map(s=>({...s, _kind:'sym'}));
+  renderCalendar(meals, symps);
+  const items = meals.concat(symps).sort((a,b)=> b.time - a.time);
+  const box = $('timelineList');
+  box.innerHTML = '';
+  if(!items.length){ box.innerHTML = '<div class="card empty-tip">还没有记录，去「记录」页开始吧</div>'; return; }
+  let lastDay = '';
+  items.forEach(it=>{
+    const dk = dayKey(it.time);
+    if(dk !== lastDay){
+      lastDay = dk;
+      const h = document.createElement('div');
+      h.className = 'day-title'; h.textContent = dk;
+      box.appendChild(h);
+    }
+    box.appendChild(buildTimelineItem(it));
+  });
+}
+function buildTimelineItem(it){
+  const wrap = document.createElement('div');
+  wrap.className = 'tl-item';
+  const del = document.createElement('button');
+  del.className = 'tl-del'; del.textContent = '删除';
+  const body = document.createElement('div');
+  body.className = 'tl-body';
+
+  if(it._kind === 'meal'){
+    const chips = it.ingredients.map(g=>
+      '<span class="chip ' + g.fodmap + '">' + esc(g.name) +
+      (g.inferred ? '<span class="inf">[推测]</span>' : '') +
+      '·' + (AMT_SHORT[g.amount]||'中') + '</span>'
+    ).join('');
+    body.innerHTML =
+      '<div class="tl-head">' +
+        '<button class="tl-time" data-act="time" title="点按修改时间">' + hm(it.time) + '</button>' +
+        '<span>' + LEVEL_EMOJI[it.maxLevel] + '</span>' +
+        '<span class="tl-dish">' + esc(it.dishName) + '</span>' +
+        (it.thumbnail ? '<img class="tl-thumb" src="' + it.thumbnail + '">' : '') +
+      '</div>' +
+      '<div class="tl-chips">' + chips + '</div>' +
+      (it.note ? '<div class="tl-note">备注：' + esc(it.note) + '</div>' : '');
+  }else{
+    const meta = SYM_TYPES.find(s=>s.t===it.type) || {i:'🩺'};
+    body.innerHTML =
+      '<div class="tl-sym">' +
+        '<span class="ico">' + meta.i + '</span>' +
+        '<button class="tl-time" data-act="time" title="点按修改时间">' + hm(it.time) + '</button>' +
+        '<span>' + esc(it.type) + '</span>' +
+        '<span class="sev-badge">' + it.severity + '/10</span>' +
+      '</div>' +
+      (it.note ? '<div class="tl-note">' + esc(it.note) + '</div>' : '');
+  }
+
+  // 点时间弹出时间编辑框
+  const timeBtn = body.querySelector('[data-act=time]');
+  if(timeBtn) timeBtn.addEventListener('click', ()=> editItemTime(it));
+
+  del.addEventListener('click', async ()=>{
+    if(!await showConfirm('删除记录', '确认删除这条记录？')) return;
+    await dbDel(it._kind==='meal' ? 'meals' : 'symptoms', it.id);
+    renderTimeline();
+  });
+  wrap.appendChild(del);
+  wrap.appendChild(body);
+  attachSwipe(body);
+  return wrap;
+}
+
+/* 修改条目时间（饮食/症状通用），保存后刷新时间线 */
+async function editItemTime(it){
+  const storeName = it._kind === 'meal' ? 'meals' : 'symptoms';
+  const v = await showModal({
+    title: '修改时间',
+    desc: it._kind === 'meal' ? ('「' + it.dishName + '」的用餐时间') : ('「' + it.type + '」的记录时间'),
+    input: dtLocalVal(it.time), inputType: 'datetime-local'
+  });
+  if(!v) return;
+  const t = new Date(v).getTime();
+  if(isNaN(t)){ toast('时间格式不正确'); return; }
+  it.time = t; delete it._kind;
+  await dbPut(storeName, it);
+  renderTimeline();
+  toast('时间已更新');
+}
+/* 左滑手势：内容左移露出删除按钮 */
+function attachSwipe(body){
+  let sx = 0, dx = 0, dragging = false;
+  const closeOthers = ()=> document.querySelectorAll('.tl-body').forEach(b=>{ if(b!==body) b.style.transform='translateX(0)'; });
+  body.addEventListener('touchstart', e=>{
+    sx = e.touches[0].clientX; dx = 0; dragging = true;
+    body.style.transition = 'none';
+    closeOthers();
+  }, {passive:true});
+  body.addEventListener('touchmove', e=>{
+    if(!dragging) return;
+    dx = Math.min(0, e.touches[0].clientX - sx); // 只允许向左
+    dx = Math.max(dx, -90);
+    body.style.transform = 'translateX(' + dx + 'px)';
+  }, {passive:true});
+  body.addEventListener('touchend', ()=>{
+    if(!dragging) return;
+    dragging = false;
+    body.style.transition = '';
+    // 滑动超过 40px 则展开删除按钮，否则回弹
+    body.style.transform = dx < -40 ? 'translateX(-76px)' : 'translateX(0)';
+  });
+}
+
+/* ==================================================================
+ * Tab3 - 统计
+ * ================================================================== */
+async function renderStats(){
+  const meals = await dbAll('meals');
+  const symps = await dbAll('symptoms');
+
+  /* --- 近30天高/中/低餐次占比 --- */
+  const since = Date.now() - 30*864e5;
+  const recent = meals.filter(m=> m.time >= since);
+  const cnt = {high:0, medium:0, low:0, unknown:0};
+  recent.forEach(m=> cnt[m.maxLevel || 'unknown']++);
+  const total = recent.length;
+  const box = $('levelStats');
+  if(!total){ box.innerHTML = '<div class="empty-tip">近 30 天暂无饮食记录</div>'; }
+  else{
+    const pct = k => Math.round(cnt[k]/total*100);
+    box.innerHTML =
+      '<div class="stat-bar">' +
+        '<div style="width:' + pct('high') + '%;background:#e74c3c"></div>' +
+        '<div style="width:' + pct('medium') + '%;background:#f1c40f"></div>' +
+        '<div style="width:' + pct('low') + '%;background:#2ecc71"></div>' +
+        '<div style="width:' + pct('unknown') + '%;background:#d1d1d6"></div>' +
+      '</div>' +
+      '<div class="legend">' +
+        '<span>🔴 高 ' + cnt.high + ' 餐（' + pct('high') + '%）</span>' +
+        '<span>🟡 中 ' + cnt.medium + ' 餐（' + pct('medium') + '%）</span>' +
+        '<span>🟢 低 ' + cnt.low + ' 餐（' + pct('low') + '%）</span>' +
+        (cnt.unknown ? '<span>⚪ 未知 ' + cnt.unknown + ' 餐</span>' : '') +
+      '</div>';
+  }
+
+  /* --- 食材触发分析：食用后24h内出现症状次数 / 总食用次数 --- */
+  const map = {}; // 归一化食材名 -> {total, sympt}
+  meals.forEach(m=>{
+    const names = [...new Set(m.ingredients.map(g=> canonName(g.name)))];
+    names.forEach(n=>{
+      if(!map[n]) map[n] = {total:0, sympt:0};
+      map[n].total++;
+      // 该餐后 24 小时内是否有症状
+      const has = symps.some(s=> s.time >= m.time && s.time <= m.time + 24*3600*1000);
+      if(has) map[n].sympt++;
+    });
+  });
+  const rows = Object.entries(map)
+    .filter(([,v])=> v.total >= 2)
+    .sort((a,b)=> (b[1].sympt/b[1].total) - (a[1].sympt/a[1].total) || b[1].total - a[1].total);
+  const tbox = $('trigStats');
+  if(!rows.length){ tbox.innerHTML = '<div class="empty-tip">数据不足：同一食材需出现至少 2 次</div>'; return; }
+  tbox.innerHTML = '';
+  rows.forEach(([name, v])=>{
+    const rate = v.sympt / v.total;
+    const lv = fodmapLevel(name);
+    const div = document.createElement('div');
+    div.className = 'trig-row';
+    div.innerHTML =
+      '<div class="trig-top">' +
+        '<span>' + LEVEL_EMOJI[lv] + '</span>' +
+        '<span class="trig-name">' + esc(name) + '</span>' +
+        '<span class="trig-rate">' + Math.round(rate*100) + '%</span>' +
+      '</div>' +
+      '<div class="trig-bar"><i style="width:' + Math.round(rate*100) + '%"></i></div>' +
+      '<div class="trig-meta">' + v.sympt + '/' + v.total + ' 次食用后出现症状' +
+        (v.total < 5 ? '<span class="low-sample">⚠ 样本不足</span>' : '') +
+      '</div>';
+    tbox.appendChild(div);
+  });
+}
+
+/* ==================================================================
+ * Markdown 导出（Obsidian 用，单文件按天分节）
+ * ================================================================== */
+async function exportMarkdown(){
+  const meals = await dbAll('meals');
+  const symps = await dbAll('symptoms');
+  if(!meals.length && !symps.length){ toast('暂无数据可导出'); return; }
+  const items = meals.map(m=>({...m,_kind:'meal'}))
+    .concat(symps.map(s=>({...s,_kind:'sym'})))
+    .sort((a,b)=> a.time - b.time); // 每天内部按时间正序
+  const days = {};
+  items.forEach(it=>{ (days[dayKey(it.time)] = days[dayKey(it.time)] || []).push(it); });
+  let md = '';
+  Object.keys(days).sort().forEach(dk=>{
+    md += '# ' + dk + '\n';
+    const ms = days[dk].filter(x=>x._kind==='meal');
+    const ss = days[dk].filter(x=>x._kind==='sym');
+    if(ms.length){
+      md += '## 饮食\n';
+      ms.forEach(m=>{
+        md += '- ' + hm(m.time) + ' ' + m.dishName + ' ' + LEVEL_EMOJI[m.maxLevel] + '\n';
+        md += '  - ' + m.ingredients.map(g=>
+          g.name + (g.inferred ? '[推测]' : '') + '(' + (AMT_SHORT[g.amount]||'中') + LEVEL_EMOJI[g.fodmap] + ')'
+        ).join(' ') + '\n';
+        if(m.note) md += '  - 备注：' + m.note + '\n';
+      });
+    }
+    if(ss.length){
+      md += '## 症状\n';
+      ss.forEach(s=>{
+        md += '- ' + hm(s.time) + ' ' + s.type + ' ' + s.severity + '/10' + (s.note ? '（' + s.note + '）' : '') + '\n';
+      });
+    }
+    md += '\n';
+  });
+  download('fodmap-' + dayKey(Date.now()) + '.md', md, 'text/markdown;charset=utf-8');
+  toast('Markdown 已导出');
+}
+
+/* ==================================================================
+ * Tab4 - 设置与数据管理
+ * ================================================================== */
+function renderSettings(){
+  const s = loadSettings();
+  $('setBaseUrl').value = s.baseUrl;
+  $('setApiKey').value = s.apiKey;
+  $('setModel').value = s.model;
+}
+$('saveSetBtn').addEventListener('click', ()=>{
+  saveSettings({
+    baseUrl: $('setBaseUrl').value.trim() || DEFAULT_BASE_URL,
+    apiKey: $('setApiKey').value.trim(),
+    model: $('setModel').value.trim() || 'gpt-4o'
+  });
+  toast('设置已保存');
+});
+
+/* 导出 JSON 备份（三个 store 全量） */
+$('expJsonBtn').addEventListener('click', async ()=>{
+  const data = {
+    version: 1, exportedAt: new Date().toISOString(),
+    meals: await dbAll('meals'),
+    symptoms: await dbAll('symptoms'),
+    templates: await dbAll('templates'),
+    customLevels: loadCustom()
+  };
+  download('fodmap-backup-' + dayKey(Date.now()) + '.json', JSON.stringify(data, null, 2), 'application/json');
+  toast('JSON 备份已导出');
+});
+
+/* 导入 JSON 恢复：清空后写入（保留原 id 以便去重） */
+$('impJsonBtn').addEventListener('click', ()=> $('impFileInput').click());
+$('impFileInput').addEventListener('change', e=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async ()=>{
+    try{
+      const data = JSON.parse(reader.result);
+      if(!data || !Array.isArray(data.meals) || !Array.isArray(data.symptoms))
+        throw new Error('文件格式不正确');
+      if(!await showConfirm('导入确认', '导入将覆盖当前全部数据（共 ' + data.meals.length + ' 餐 / ' + data.symptoms.length + ' 症状），确认？')) return;
+      await Promise.all([dbClear('meals'), dbClear('symptoms'), dbClear('templates')]);
+      for(const m of data.meals){ delete m._kind; await dbPut('meals', m); }
+      for(const s of data.symptoms){ delete s._kind; await dbPut('symptoms', s); }
+      for(const t of (data.templates || [])) await dbPut('templates', t);
+      if(data.customLevels) localStorage.setItem(CUSTOM_KEY, JSON.stringify(data.customLevels));
+      renderTemplates();
+      toast('导入完成');
+    }catch(err){ alert('导入失败：' + err.message); }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+});
+
+$('expMdBtn').addEventListener('click', exportMarkdown);
+
+/* 清空数据（二次确认） */
+$('clearBtn').addEventListener('click', async ()=>{
+  if(!await showConfirm('清空数据', '确认清空全部饮食/症状/模板数据？此操作不可恢复！')) return;
+  if(!await showConfirm('二次确认', '真的要删除所有数据吗？')) return;
+  await Promise.all([dbClear('meals'), dbClear('symptoms'), dbClear('templates')]);
+  renderTemplates();
+  toast('数据已清空');
+});
+
+/* ==================================================================
+ * 初始化
+ * ================================================================== */
+(async function init(){
+  try{ await openDB(); }
+  catch(e){ alert('IndexedDB 打开失败，请确认未处于无痕模式'); return; }
+  renderTemplates();
+  renderSymChips();
+  renderSettings();
+  renderPhotoPicker();
+  $('mealTimeInput').value = dtLocalVal(Date.now());
+})();
+</script>
+</body>
+</html>
