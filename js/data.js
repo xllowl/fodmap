@@ -134,3 +134,34 @@ export function deriveMealType(ts){
 export function mealTypeOf(meal){
   return (meal.mealType && MEAL_TYPE_MAP[meal.mealType]) ? meal.mealType : deriveMealType(meal.time);
 }
+
+/* ==================================================================
+ * 单餐 FODMAP 评估：不再只取最高级别，而是「级别 × 含量」加权累加评分
+ * 级别权重：high=3 medium=2（low/unknown 不计入风险）
+ * 量级权重：少量=1 中等=2 大量=3
+ * ================================================================== */
+export const AMT_WEIGHT = {'少量':1, '中等':2, '大量':3};
+export function evalMealScore(ingredients){
+  let s = 0;
+  (ingredients || []).forEach(g=>{
+    const lw = g.fodmap === 'high' ? 3 : g.fodmap === 'medium' ? 2 : 0;
+    s += lw * (AMT_WEIGHT[g.amount] || 2);
+  });
+  return s;
+}
+/* 评分 → 整餐级别：0=低；1-4=中（如 1 种少量高风险 或 中量中风险）；≥5=高
+ * （如 中量高风险 6、两种少量高风险叠加 6、大量中风险 6） */
+export function mealLevelFromScore(score){
+  if(score <= 0) return 'low';
+  if(score <= 4) return 'medium';
+  return 'high';
+}
+/* 读取整餐评分：优先取记录中的 score，老数据按食材现算 */
+export function mealScoreOf(meal){
+  return (meal && typeof meal.score === 'number') ? meal.score : evalMealScore(meal ? meal.ingredients : []);
+}
+/* 读取整餐级别（决定颜色）：手动确认过的 level 优先，否则按评分推导 */
+export function mealLevelOf(meal){
+  if(meal && ['high','medium','low','unknown'].includes(meal.level)) return meal.level;
+  return mealLevelFromScore(mealScoreOf(meal));
+}
