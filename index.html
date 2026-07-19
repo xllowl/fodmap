@@ -675,6 +675,43 @@ function processImage(file){
 /* ==================================================================
  * Tab1 - 调用多模态 LLM 分析食材（OpenAI 兼容 chat completions）
  * ================================================================== */
+/* 未知食材 FODMAP 定级的系统提示词：返回纯 JSON 数组 */
+const FODMAP_PROMPT = `你是 FODMAP 饮食法专家。用户会给你一组食材名（可能含中餐/加工食品）。
+对每种食材给出其 FODMAP 级别（按常规食用量）：
+high=高（如洋葱、大蒜、小麦、牛奶、苹果），medium=中，low=低（如米饭、胡萝卜、香蕉、鸡蛋、普通肉类）。
+无法判断的填 unknown。复合食品按主要高风险成分定级。
+严格只返回 JSON 数组，无任何其他文字、无 markdown 代码块：
+[{"name":"食材名(与输入一致)","level":"high|medium|low|unknown","reason":"15字内理由"}]`;
+
+/* 批量向大模型查询未知食材的 FODMAP 级别；失败静默返回 null（不阻塞主流程） */
+async function askFodmapLevels(names){
+  if(!names.length) return [];
+  const s = loadSettings();
+  try{
+    const resp = await fetch(s.baseUrl, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + s.apiKey },
+      body: JSON.stringify({
+        model: s.model,
+        messages: [
+          {role:'system', content: FODMAP_PROMPT},
+          {role:'user',   content: '请定级：' + names.join('、')}
+        ],
+        temperature: 0.1
+      })
+    });
+    if(!resp.ok) return null;
+    const data = await resp.json();
+    const content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+    if(!content) return null;
+    const t = content.replace(/```(?:json)?/gi, '');
+    const i = t.indexOf('['), j = t.lastIndexOf(']');
+    if(i < 0 || j <= i) return null;
+    const arr = JSON.parse(t.slice(i, j+1));
+    return Array.isArray(arr) ? arr : null;
+  }catch(e){ return null; }
+}
+
 $('analyzeBtn').addEventListener('click', analyze);
 async function analyze(){
   const s = loadSettings();
@@ -718,6 +755,8 @@ async function analyze(){
     state.parsed = parseLLM(content);
     renderConfirm();
     toast('分析完成，请确认食材');
+    // 后台自动批量查询本地表未收录食材的 FODMAP 级别（不阻塞确认界面）
+    autoFillUnknownLevels();
   }catch(err){
     alert('分析失败：' + err.message + '\n\n可检查网络/Key 后点击「分析食材」重试。');
   }finally{
@@ -751,6 +790,33 @@ function parseLLM(text){
   return obj;
 }
 
+/* 后台自动批量查询未知食材级别，回填确认界面；AI 定级同样记忆到自定义表 */
+let aiReasons = {}; // 本轮 AI 定级理由 {食材名: 理由}
+async function autoFillUnknownLevels(){
+  if(!state.parsed) return;
+  const unknown = [...new Set(state.parsed.ingredients
+    .filter(g=> g.fodmap === 'unknown' && !lookupFodmap(g.name))
+    .map(g=> g.name))];
+  if(!unknown.length) return;
+  aiReasons = {};
+  const rows = await askFodmapLevels(unknown);
+  if(!rows){ renderIngList(); return; } // 查询失败：保持 unknown，行内提示手动定级
+  let changed = false;
+  rows.forEach(r=>{
+    const name = String(r.name||'').trim();
+    const lv = ['high','medium','low'].includes(r.level) ? r.level : null;
+    if(!name || !lv) return;
+    aiReasons[name] = String(r.reason||'');
+    state.parsed.ingredients.forEach(g=>{
+      if(g.name === name && g.fodmap === 'unknown' && !g.manualLevel){
+        g.fodmap = lv; g.aiLevel = true; changed = true;
+      }
+    });
+    saveCustomLevel(name, lv); // AI 定级也记忆，下次同食材直接带出
+  });
+  if(changed && state.parsed){ renderIngList(); toast('AI 已为 ' + Object.keys(aiReasons).length + ' 种食材定级，可点色点修正'); }
+}
+
 /* ==================================================================
  * Tab1 - 确认界面（可编辑菜名/量级/推测标记/级别/增删）
  * ================================================================== */
@@ -774,16 +840,18 @@ function renderIngList(){
         '<span class="ing-name">' + esc(g.name) + '</span>' +
         (g.inferred ? '<button class="tag-inferred" data-act="inferred" title="点按取消推测标记">推测</button>' : '') +
         (hit && hit.note ? '<span class="ing-note">' + esc(hit.note) + '</span>' : '') +
-        (!hit ? '<span class="ing-note">本地表未收录，点左侧圆点手动定级</span>' : '') +
+        (g.aiLevel && aiReasons[g.name] ? '<span class="ing-note" style="color:#A34A18">AI 定级：' + esc(aiReasons[g.name]) + '</span>' : '') +
+        (!hit && !g.aiLevel ? '<span class="ing-note">本地表未收录' + (g.fodmap==='unknown' ? '，AI 查询中/点圆点手动定级' : '') + '</span>' : '') +
       '</div>' +
       '<button class="amt" data-act="amount">' + esc(g.amount) + '</button>' +
       '<button class="ing-del" data-act="del" aria-label="删除食材"><i class="fa-solid fa-xmark fa-only" aria-hidden="true"></i><span class="fa-fallback">✕</span></button>';
     row.querySelectorAll('[data-act]').forEach(el=>{
       el.addEventListener('click', ()=>{
         const act = el.dataset.act;
-        if(act==='level'){ // 级别循环：未知→低→中→高，手动定级自动记忆到自定义表
+        if(act==='level'){ // 级别循环：未知→低→中→高，手动定级覆盖 AI 结果并记忆
           g.fodmap = LVL_CYCLE[(LVL_CYCLE.indexOf(g.fodmap)+1) % LVL_CYCLE.length];
           g.manualLevel = true;
+          g.aiLevel = false;
           saveCustomLevel(g.name, g.fodmap);
         }
         if(act==='amount'){ // 量级循环：少→中→大
