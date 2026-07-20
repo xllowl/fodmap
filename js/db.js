@@ -1,14 +1,15 @@
 /* ==================================================================
- * IndexedDB 封装：meals / symptoms / templates 三个 store
+ * IndexedDB 封装：meals / symptoms / templates / moods 四个 store
+ * v2：新增 moods（心情记录）；老库打开时自动升级补建
  * ================================================================== */
 let db = null;
 
 export function openDB(){
   return new Promise((res, rej)=>{
-    const r = indexedDB.open('fodmap-db', 1);
+    const r = indexedDB.open('fodmap-db', 2);
     r.onupgradeneeded = e=>{
       const d = e.target.result;
-      ['meals','symptoms','templates'].forEach(s=>{
+      ['meals','symptoms','templates','moods'].forEach(s=>{
         if(!d.objectStoreNames.contains(s)) d.createObjectStore(s, {keyPath:'id', autoIncrement:true});
       });
     };

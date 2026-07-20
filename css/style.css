@@ -159,6 +159,23 @@ nav#tabbar button.active{color:#25806F;font-weight:600}
 .sev-row input[type=range]{flex:1;accent-color:#25806F}
 .sev-val{font-size:1.1rem;font-weight:700;color:#25806F;min-width:48px;text-align:center}
 
+/* ============ 心情记录（仿 Bearable 电量式打分） ============ */
+.mood-face{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.mood-face .mf-ico{font-size:1.8rem;line-height:1}
+.mood-face .mf-val{font-size:1.25rem;font-weight:700}
+.mood-face .mf-t{font-size:.85rem;color:var(--ink-2)}
+.mood-gauge{display:flex;gap:4px;margin-bottom:12px}
+.mood-seg{
+  flex:1;height:24px;border-radius:7px;background:#F3EFE6;padding:0;
+  transition:background .2s ease,transform .1s ease;
+}
+.mood-seg:active{transform:scaleY(.85)}
+/* 心情趋势迷你条形图 */
+.mt-avg{font-size:.85rem;color:var(--ink-2)}
+.mt-trend{display:flex;align-items:flex-end;gap:3px;height:56px;margin-top:8px}
+.mt-bar{flex:1;border-radius:3px 3px 0 0;min-height:3px}
+.mt-bar.mt-empty{height:3px;min-height:3px;background:#E6DFD2;border-radius:2px}
+
 /* ============ 时间线 ============ */
 .day-title{font-size:.85rem;font-weight:700;color:#9A5420;margin:16px 4px 8px} /* 暖橙强调：日期标记（AA 5.36:1） */
 .tl-item{position:relative;overflow:hidden;border-radius:14px;margin-bottom:10px}
@@ -191,6 +208,7 @@ nav#tabbar button.active{color:#25806F;font-weight:600}
 .tl-sym{display:flex;align-items:center;gap:8px}
 .tl-sym .ico{font-size:1.2rem;color:#9A5420}
 .sev-badge{margin-left:auto;font-size:.8rem;font-weight:700;padding:3px 9px;border-radius:10px;background:#FBEBE8;color:#C0392B}
+.sev-badge.ok{background:#E8F5EE;color:#1E7A4F} /* 无症状标记 */
 
 /* ---- 餐次徽标 + 单餐次折叠 ---- */
 .tl-mtype{

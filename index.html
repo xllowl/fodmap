@@ -71,9 +71,20 @@
   </div>
 
   <div class="card">
+    <h2><i class="fa-solid fa-face-smile" aria-hidden="true"></i>心情记录</h2>
+    <div class="mood-face" id="moodFace"></div>
+    <div class="mood-gauge" id="moodGauge"></div>
+    <label class="field">备注（可选）
+      <input type="text" id="moodNote" placeholder="如：今天工作顺利">
+    </label>
+    <button class="btn-primary" id="saveMoodBtn">保存心情</button>
+  </div>
+
+  <div class="card">
     <h2><i class="fa-solid fa-heart-pulse" aria-hidden="true"></i>症状记录</h2>
+    <div class="sub">今天没有不适可选「无症状」，主动标记与漏记区分开</div>
     <div class="sym-chips" id="symChips"></div>
-    <div class="sev-row">
+    <div class="sev-row" id="sevRow">
       <span style="font-size:.85rem;color:var(--ink-2)">严重度</span>
       <input type="range" id="sevSlider" min="1" max="10" value="5">
       <span class="sev-val" id="sevVal">5/10</span>
@@ -113,6 +124,10 @@
   <div class="card">
     <h2><i class="fa-solid fa-chart-pie" aria-hidden="true"></i>近 30 天 FODMAP 餐次占比</h2>
     <div id="levelStats"></div>
+  </div>
+  <div class="card">
+    <h2><i class="fa-solid fa-face-smile" aria-hidden="true"></i>近 30 天心情趋势</h2>
+    <div id="moodStats"></div>
   </div>
   <div class="card">
     <h2><i class="fa-solid fa-magnifying-glass-chart" aria-hidden="true"></i>食材触发分析</h2>

@@ -2,7 +2,7 @@
  * Tab1 记录：拍照分析 / 食材确认 / 模板 / 症状记录
  * ================================================================== */
 import { SYS_PROMPT, FODMAP_PROMPT, AMT_CYCLE, LVL_CYCLE, LEVEL_TEXT,
-         SYM_TYPES, MEAL_TYPES, deriveMealType,
+         SYM_TYPES, MEAL_TYPES, deriveMealType, moodFace, moodTier,
          evalMealScore, mealLevelFromScore } from './data.js';
 import { $, esc, toast, showConfirm, showPrompt, dtLocalVal, symIcon } from './util.js';
 import { dbAdd, dbAll, dbDel } from './db.js';
@@ -338,7 +338,30 @@ export async function renderTemplates(){
 }
 
 /* ==================================================================
- * 症状记录：chips + 滑块，两步完成
+ * 心情记录：分段仪表条（1-10，仿 Bearable 电量式打分），每天可记多条
+ * ================================================================== */
+let moodScore = 7;
+function renderMood(){
+  const f = moodFace(moodScore), t = moodTier(moodScore);
+  $('moodFace').innerHTML =
+    '<span class="mf-ico" style="color:' + t.seg + '">' + symIcon(f.i, f.t) + '</span>' +
+    '<span class="mf-val" style="color:' + t.fg + '">' + moodScore + '/10</span>' +
+    '<span class="mf-t">' + f.t + '</span>';
+  const g = $('moodGauge');
+  g.innerHTML = '';
+  for(let i = 1; i <= 10; i++){
+    const seg = document.createElement('button');
+    seg.type = 'button';
+    seg.className = 'mood-seg';
+    if(i <= moodScore) seg.style.background = t.seg; // 已填充段取当前档位色
+    seg.setAttribute('aria-label', i + ' 分');
+    seg.addEventListener('click', ()=>{ moodScore = i; renderMood(); });
+    g.appendChild(seg);
+  }
+}
+
+/* ==================================================================
+ * 症状记录：chips + 滑块，两步完成；选「无症状」时隐藏严重度（severity=0）
  * ================================================================== */
 let selSym = null;
 function renderSymChips(){
@@ -351,6 +374,8 @@ function renderSymChips(){
     b.addEventListener('click', ()=>{ selSym = s.t; renderSymChips(); });
     box.appendChild(b);
   });
+  const cur = SYM_TYPES.find(s=> s.t === selSym);
+  $('sevRow').style.display = cur && cur.none ? 'none' : '';
 }
 
 /* ==================================================================
@@ -431,18 +456,27 @@ export function initRecord(switchTab){
   $('sevSlider').addEventListener('input', ()=> $('sevVal').textContent = $('sevSlider').value + '/10');
   $('saveSymBtn').addEventListener('click', async ()=>{
     if(!selSym){ toast('请先选择症状'); return; }
+    const cur = SYM_TYPES.find(s=> s.t === selSym);
+    const none = !!(cur && cur.none);
     await dbAdd('symptoms', {
       time: Date.now(), type: selSym,
-      severity: parseInt($('sevSlider').value, 10),
+      severity: none ? 0 : parseInt($('sevSlider').value, 10),
       note: $('symNote').value.trim()
     });
     selSym = null; $('symNote').value = ''; $('sevSlider').value = 5; $('sevVal').textContent = '5/10';
     renderSymChips();
-    toast('症状已记录');
+    toast(none ? '已标记：今日无症状' : '症状已记录');
+  });
+
+  $('saveMoodBtn').addEventListener('click', async ()=>{
+    await dbAdd('moods', {time: Date.now(), score: moodScore, note: $('moodNote').value.trim()});
+    $('moodNote').value = '';
+    toast('心情已记录 ' + moodScore + '/10');
   });
 
   renderTemplates();
   renderSymChips();
+  renderMood();
   renderPhotoPicker();
   $('mealTimeInput').value = dtLocalVal(Date.now());
 }

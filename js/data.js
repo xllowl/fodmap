@@ -104,12 +104,28 @@ export const AMT_SHORT   = {'少量':'少','中等':'中','大量':'大'};
 export const AMT_CYCLE   = ['少量','中等','大量'];
 export const LVL_CYCLE   = ['unknown','low','medium','high'];
 
-/* 症状类型 → FontAwesome 图标 */
+/* 症状类型 → FontAwesome 图标；首项「无症状」为显式无症狀标记（severity=0，仿 Bearable 的 None） */
 export const SYM_TYPES = [
+  {t:'无症状', i:'fa-circle-check', none:true},
   {t:'腹痛', i:'fa-bolt'},          {t:'腹胀', i:'fa-circle-up'},
   {t:'腹泻', i:'fa-droplet'},       {t:'便秘', i:'fa-ban'},
   {t:'产气', i:'fa-wind'},          {t:'恶心', i:'fa-dizzy'}
 ];
+
+/* 心情评分（1-10）→ 表情/文案（仿 Bearable 电量式打分） */
+export function moodFace(score){
+  if(score <= 2) return {i:'fa-face-tired',      t:'很痛苦'};
+  if(score <= 4) return {i:'fa-face-frown',      t:'不太好'};
+  if(score <= 6) return {i:'fa-face-meh',        t:'一般'};
+  if(score <= 8) return {i:'fa-face-smile',      t:'不错'};
+  return              {i:'fa-face-laugh-beam', t:'很好'};
+}
+/* 心情评分 → 三档配色（条段色 seg / 浅底 bg / 文字 fg） */
+export function moodTier(score){
+  if(score <= 3) return {seg:'#E86A5A', bg:'#FBEBE8', fg:'#C0392B'};
+  if(score <= 6) return {seg:'#E5B93E', bg:'#FBF4DC', fg:'#8A6D1A'};
+  return              {seg:'#3BAF7C', bg:'#E8F5EE', fg:'#1E7A4F'};
+}
 
 /* 用餐类型：正餐 3 餐 + 点心 */
 export const MEAL_TYPES = [

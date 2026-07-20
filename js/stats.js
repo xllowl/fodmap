@@ -2,9 +2,9 @@
  * Tab3 统计：近 30 天 FODMAP 占比 + 食材触发分析
  *            触发分析支持左滑排除食材，已排除收纳至独立折叠模块
  * ================================================================== */
-import { $, esc, toast, lvlIcon, attachSwipe, setFold } from './util.js';
+import { $, esc, toast, dayKey, lvlIcon, attachSwipe, setFold } from './util.js';
 import { dbAll } from './db.js';
-import { mealLevelOf } from './data.js';
+import { mealLevelOf, moodTier } from './data.js';
 import { fodmapLevel, canonName, loadExcluded, setExcluded } from './store.js';
 
 export async function renderStats(){
@@ -35,6 +35,38 @@ export async function renderStats(){
         (cnt.unknown ? '<span>' + lvlIcon('unknown') + ' 未知 ' + cnt.unknown + ' 餐</span>' : '') +
       '</div>';
   }
+  // 症状概览：有症状天数 vs 显式标记无症状天数（无症状标记不计入触发分析）
+  const sym30 = symps.filter(s=> s.time >= since);
+  if(sym30.length){
+    const symDaySet = new Set(sym30.filter(s=> s.severity > 0).map(s=> dayKey(s.time)));
+    const noneCnt = new Set(sym30.filter(s=> s.severity === 0).map(s=> dayKey(s.time)).filter(k=> !symDaySet.has(k))).size;
+    box.innerHTML += '<div class="legend" style="margin-top:8px"><span>症状：有症状 ' + symDaySet.size + ' 天 · 标记无症状 ' + noneCnt + ' 天</span></div>';
+  }
+
+  /* --- 近30天心情趋势：每日均值迷你条形图 --- */
+  const mbox = $('moodStats');
+  const recentMoods = (await dbAll('moods')).filter(m=> m.time >= since);
+  if(!recentMoods.length){ mbox.innerHTML = '<div class="empty-tip">近 30 天暂无心情记录</div>'; }
+  else{
+    const avg = recentMoods.reduce((a,m)=> a + m.score, 0) / recentMoods.length;
+    const byDay = {};
+    recentMoods.forEach(m=>{ const k = dayKey(m.time); (byDay[k] = byDay[k] || []).push(m.score); });
+    let bars = '';
+    for(let i = 13; i >= 0; i--){ // 近 14 天
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const k = dayKey(d.getTime());
+      const arr = byDay[k];
+      if(arr){
+        const a = arr.reduce((x,y)=> x+y, 0) / arr.length;
+        bars += '<div class="mt-bar" style="height:' + Math.max(8, Math.round(a*10)) + '%;background:' + moodTier(a).seg + '" title="' + k.slice(5) + ' 平均 ' + a.toFixed(1) + '"></div>';
+      }else{
+        bars += '<div class="mt-bar mt-empty" title="' + k.slice(5) + ' 无记录"></div>';
+      }
+    }
+    mbox.innerHTML =
+      '<div class="mt-avg">平均 <b style="color:' + moodTier(avg).fg + '">' + avg.toFixed(1) + '/10</b> · 共 ' + recentMoods.length + ' 条（近 14 天）</div>' +
+      '<div class="mt-trend">' + bars + '</div>';
+  }
 
   /* --- 食材触发分析：食用后24h内出现症状次数 / 总食用次数 --- */
   const map = {}; // 归一化食材名 -> {total, sympt}
@@ -43,8 +75,8 @@ export async function renderStats(){
     names.forEach(n=>{
       if(!map[n]) map[n] = {total:0, sympt:0};
       map[n].total++;
-      // 该餐后 24 小时内是否有症状
-      const has = symps.some(s=> s.time >= m.time && s.time <= m.time + 24*3600*1000);
+      // 该餐后 24 小时内是否有症状（severity=0 的无症状标记不算）
+      const has = symps.some(s=> s.severity > 0 && s.time >= m.time && s.time <= m.time + 24*3600*1000);
       if(has) map[n].sympt++;
     });
   });

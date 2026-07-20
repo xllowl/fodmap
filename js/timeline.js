@@ -3,7 +3,8 @@
  *              + 餐次徽标（早/午/晚/点心）+ 单餐次折叠展开
  * ================================================================== */
 import { AMT_SHORT, SYM_TYPES, MEAL_TYPES, MEAL_TYPE_MAP, mealTypeOf,
-         LEVEL_TEXT, evalMealScore, mealLevelOf, mealScoreOf } from './data.js';
+         LEVEL_TEXT, evalMealScore, mealLevelOf, mealScoreOf,
+         moodFace, moodTier } from './data.js';
 import { $, esc, pad, dayKey, hm, dtLocalVal, toast, showConfirm, showModal,
          lvlIcon, symIcon, attachSwipe, setFold } from './util.js';
 import { dbAll, dbDel, dbPut } from './db.js';
@@ -14,9 +15,13 @@ let calCursor = new Date(); // 当前显示的月份
 calCursor.setDate(1);
 
 function renderCalendar(meals, symps){
-  // 按天聚合：当日最高严重度 + 是否有饮食记录
-  const symMap = {}, mealSet = {};
-  symps.forEach(s=>{ const k = dayKey(s.time); symMap[k] = Math.max(symMap[k]||0, s.severity); });
+  // 按天聚合：当日最高严重度 + 是否有饮食记录 + 显式无症状标记
+  const symMap = {}, mealSet = {}, noneSet = {};
+  symps.forEach(s=>{
+    const k = dayKey(s.time);
+    if(s.severity > 0) symMap[k] = Math.max(symMap[k]||0, s.severity);
+    else noneSet[k] = true;
+  });
   meals.forEach(m=>{ mealSet[dayKey(m.time)] = true; });
 
   const y = calCursor.getFullYear(), mo = calCursor.getMonth();
@@ -40,7 +45,7 @@ function renderCalendar(meals, symps){
         cell.classList.add('has-sym');
         cell.style.background = sev <= 3 ? '#F5C8D8' : sev <= 6 ? '#EC8FAF' : '#D14D3D';
         cell.title = '当日最高症状严重度 ' + sev + '/10';
-      }else if(mealSet[k]){ cell.classList.add('no-sym'); } // 有饮食记录但无症状
+      }else if(mealSet[k] || noneSet[k]){ cell.classList.add('no-sym'); } // 有记录但无症状 / 主动标记无症状
       if(k === todayK) cell.classList.add('today');
       if(mealSet[k]){ const dot = document.createElement('span'); dot.className = 'meal-dot'; cell.appendChild(dot); }
     }
@@ -52,8 +57,9 @@ function renderCalendar(meals, symps){
 export async function renderTimeline(){
   const meals = (await dbAll('meals')).map(m=>({...m, _kind:'meal'}));
   const symps = (await dbAll('symptoms')).map(s=>({...s, _kind:'sym'}));
+  const moods = (await dbAll('moods')).map(m=>({...m, _kind:'mood'}));
   renderCalendar(meals, symps);
-  const items = meals.concat(symps).sort((a,b)=> b.time - a.time);
+  const items = meals.concat(symps, moods).sort((a,b)=> b.time - a.time);
   const box = $('timelineList');
   box.innerHTML = '';
   if(!items.length){ box.innerHTML = '<div class="card empty-tip">还没有记录，去「记录」页开始吧</div>'; return; }
@@ -153,14 +159,25 @@ function buildTimelineItem(it){
       mtBtn.textContent = MEAL_TYPE_MAP[next].t;
       toast('已改为「' + MEAL_TYPE_MAP[next].t + '」');
     });
-  }else{
+  }else if(it._kind === 'sym'){
     const meta = SYM_TYPES.find(s=>s.t===it.type) || {i:'fa-stethoscope'};
+    const none = it.severity === 0; // 显式无症状标记
     body.innerHTML =
       '<div class="tl-sym">' +
-        '<span class="ico">' + symIcon(meta.i, it.type) + '</span>' +
+        '<span class="ico"' + (none ? ' style="color:#1E7A4F"' : '') + '>' + symIcon(meta.i, it.type) + '</span>' +
         '<button class="tl-time" data-act="time" title="点按修改时间">' + hm(it.time) + '</button>' +
         '<span>' + esc(it.type) + '</span>' +
-        '<span class="sev-badge">' + it.severity + '/10</span>' +
+        (none ? '<span class="sev-badge ok">无症状</span>' : '<span class="sev-badge">' + it.severity + '/10</span>') +
+      '</div>' +
+      (it.note ? '<div class="tl-note">' + esc(it.note) + '</div>' : '');
+  }else{ // mood 心情条目
+    const f = moodFace(it.score), t = moodTier(it.score);
+    body.innerHTML =
+      '<div class="tl-sym">' +
+        '<span class="ico" style="color:' + t.seg + '">' + symIcon(f.i, '心情') + '</span>' +
+        '<button class="tl-time" data-act="time" title="点按修改时间">' + hm(it.time) + '</button>' +
+        '<span>心情 · ' + f.t + '</span>' +
+        '<span class="sev-badge" style="background:' + t.bg + ';color:' + t.fg + '">' + it.score + '/10</span>' +
       '</div>' +
       (it.note ? '<div class="tl-note">' + esc(it.note) + '</div>' : '');
   }
@@ -171,7 +188,7 @@ function buildTimelineItem(it){
 
   del.addEventListener('click', async ()=>{
     if(!await showConfirm('删除记录', '确认删除这条记录？')) return;
-    await dbDel(it._kind==='meal' ? 'meals' : 'symptoms', it.id);
+    await dbDel(STORE_OF[it._kind], it.id);
     renderTimeline();
   });
   wrap.appendChild(del);
@@ -180,12 +197,18 @@ function buildTimelineItem(it){
   return wrap;
 }
 
-/* 修改条目时间（饮食/症状通用），保存后刷新时间线 */
+/* 条目类型 → IndexedDB store 名 */
+const STORE_OF = {meal:'meals', sym:'symptoms', mood:'moods'};
+
+/* 修改条目时间（饮食/症状/心情通用），保存后刷新时间线 */
 async function editItemTime(it){
-  const storeName = it._kind === 'meal' ? 'meals' : 'symptoms';
+  const storeName = STORE_OF[it._kind];
+  const desc = it._kind === 'meal' ? ('「' + it.dishName + '」的用餐时间')
+           : it._kind === 'mood' ? '「心情」的记录时间'
+           : ('「' + it.type + '」的记录时间');
   const v = await showModal({
     title: '修改时间',
-    desc: it._kind === 'meal' ? ('「' + it.dishName + '」的用餐时间') : ('「' + it.type + '」的记录时间'),
+    desc,
     input: dtLocalVal(it.time), inputType: 'datetime-local'
   });
   if(!v) return;
