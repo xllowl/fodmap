@@ -1,114 +1,112 @@
-/* ============ 设计变量：粉彩配色 + 强调色（强调色仅用于日期/关键交互，≤8%） ============ */
+/* ============ 设计变量：仿 Bearable 冷调配色 ============
+ * 浅薰衣草灰底 + 长春花蓝紫渐变头部 + 深藏青导航 + 青绿主色 */
 :root{
-  --mint:#88E0D0;        /* 薄荷绿 */
-  --pink:#F5C8D8;        /* 柔粉 */
-  --lavender:#C5B4E3;    /* 浅薰衣草紫 */
-  --butter:#FAEEB7;      /* 淡黄 */
-  --sky:#38BDF8;         /* 亮天蓝（强调） */
-  --orange:#FB923C;      /* 暖橙（强调） */
-  --ink:#3D3A34;         /* 主文字（纸张底上对比度>4.5:1） */
-  --ink-2:#6B665C;       /* 次要文字 */
-  --ink-3:#6E685B;       /* 弱化文字（AA 级 ≥4.5:1） */
-  --paper:#FAF7F0;       /* 纸张底色 */
+  --mint:#7EE0D2;        /* 浅青绿 */
+  --teal:#2BB39A;        /* 青绿主色（图标/进度，Bearable 主强调色） */
+  --teal-dark:#1E9C80;   /* 深青绿（白字按钮，对比度更稳） */
+  --peri:#7C80D8;        /* 长春花蓝紫（头部渐变/次级强调） */
+  --peri-2:#A4A8E8;      /* 渐变浅端 */
+  --peri-bg:#ECEEFB;     /* 蓝紫浅底 */
+  --peri-text:#5B5FA8;   /* 蓝紫文字 */
+  --navy:#22264A;        /* 深藏青（底部导航） */
+  --sky:#38BDF8;         /* 亮天蓝（强调：今日） */
+  --ink:#20294A;         /* 主文字（深藏青） */
+  --ink-2:#5A637A;       /* 次要文字 */
+  --ink-3:#8A92A8;       /* 弱化文字 */
+  --paper:#F3F4FA;       /* 浅薰衣草灰底 */
 }
-/* ============ 基础样式：移动端优先、浅色圆角卡片 ============ */
+/* ============ 基础样式：移动端优先、白色大圆角卡片 ============ */
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{font-size:16px}
 body{
   font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;
   color:var(--ink);padding-bottom:calc(64px + env(safe-area-inset-bottom));
-  /* 纸张质感：柔和底色 + SVG 噪点纹理 + 低透明度(12%)细网格叠加 */
-  background-color:var(--paper);
-  background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.42 0 0 0 0 0.36 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E"),
-    linear-gradient(rgba(97,85,61,0.12) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(97,85,61,0.12) 1px, transparent 1px);
-  background-size:120px 120px, 28px 28px, 28px 28px;
+  background:var(--paper); /* Bearable 式纯色浅底 */
 }
 header{
   position:sticky;top:0;z-index:10;
-  background:rgba(250,247,240,.92);backdrop-filter:blur(6px);
-  padding:calc(10px + env(safe-area-inset-top)) 16px 10px;
-  font-size:1.15rem;font-weight:700;text-align:center;color:var(--ink);
-  border-bottom:1px solid rgba(97,85,61,.08);
+  background:linear-gradient(135deg, var(--peri) 0%, var(--peri-2) 100%);
+  padding:calc(12px + env(safe-area-inset-top)) 16px 12px;
+  font-size:1.15rem;font-weight:700;text-align:center;color:#fff;
+  box-shadow:0 2px 12px rgba(34,38,74,.18);
 }
 main{max-width:560px;margin:0 auto;padding:0 12px}
 section.tabpage{display:none}
 section.tabpage.active{display:block}
 .card{
-  background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;
-  box-shadow:0 1px 4px rgba(97,85,61,.10);
+  background:#fff;border-radius:18px;padding:14px;margin-bottom:12px;
+  box-shadow:0 4px 14px rgba(34,38,74,.07);
 }
 .card h2{font-size:1rem;margin-bottom:10px;color:var(--ink)}
-.card h2 i{color:#4A4540;font-size:1.1em;margin-right:6px}
+.card h2 i{color:#3A4266;font-size:1.1em;margin-right:6px}
 .card .sub{font-size:.8rem;color:var(--ink-3);margin-top:-6px;margin-bottom:10px}
 button{font-family:inherit;cursor:pointer;border:none;border-radius:10px}
-/* 主按钮：薄荷绿系（深一档保证白字对比度≥4.5:1） */
+/* 主按钮：青绿系（深一档保证白字对比度） */
 .btn-primary{
-  width:100%;padding:13px;background:#25806F;color:#fff; /* 深薄荷绿，白字 AA 4.78:1 */
-  font-size:1rem;font-weight:600;border-radius:12px;
+  width:100%;padding:13px;background:var(--teal-dark);color:#fff;
+  font-size:1rem;font-weight:600;border-radius:14px;
 }
-.btn-primary:disabled{background:#9ED8CD}
-.btn-ghost{padding:8px 14px;background:#EFEAF7;color:#5B4E7A;font-size:.85rem;border-radius:10px}
-.btn-danger{padding:8px 14px;background:#FBEFE4;color:#A34A18;font-size:.85rem;border-radius:10px}
+.btn-primary:disabled{background:#9FDCD0}
+.btn-ghost{padding:8px 14px;background:var(--peri-bg);color:var(--peri-text);font-size:.85rem;border-radius:10px}
+.btn-danger{padding:8px 14px;background:#FDECEA;color:#C0392B;font-size:.85rem;border-radius:10px}
 input[type=text],input[type=password],input[type=url],input[type=datetime-local],textarea,select{
-  width:100%;padding:11px 12px;border:1px solid #E6DFD2;border-radius:10px;
-  font-size:1rem;background:#FDFCF9;font-family:inherit;color:var(--ink);
+  width:100%;padding:11px 12px;border:1px solid #E2E5F0;border-radius:10px;
+  font-size:1rem;background:#FBFCFE;font-family:inherit;color:var(--ink);
 }
-input:focus,textarea:focus{outline:none;border-color:var(--mint)}
+input:focus,textarea:focus{outline:none;border-color:var(--teal)}
 label.field{display:block;margin-bottom:12px;font-size:.85rem;color:var(--ink-2)}
 label.field input,label.field textarea{margin-top:5px}
 .hint{font-size:.75rem;color:var(--ink-3);margin-top:4px}
 .row{display:flex;gap:8px;align-items:center}
 
-/* ============ 底部 Tab 导航 ============ */
+/* ============ 底部 Tab 导航：深藏青（Bearable 标志性深色底栏） ============ */
 nav#tabbar{
   position:fixed;left:0;right:0;bottom:0;z-index:20;
-  display:flex;background:#fff;border-top:1px solid #EDE7DB;
+  display:flex;background:var(--navy);
   padding-bottom:env(safe-area-inset-bottom);
 }
 nav#tabbar button{
-  flex:1;background:none;padding:8px 0 6px;font-size:.7rem;color:var(--ink-3);
+  flex:1;background:none;padding:8px 0 6px;font-size:.7rem;color:#98A0C6;
   display:flex;flex-direction:column;align-items:center;gap:2px;border-radius:0;
 }
 nav#tabbar button .ico{font-size:1.3rem}
-nav#tabbar button.active{color:#25806F;font-weight:600}
+nav#tabbar button.active{color:#3ED6B5;font-weight:600} /* 亮青绿高亮 */
 
 /* ============ 拍照区 ============ */
 .photo-btn{
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
-  flex:1;padding:22px 8px;border:2px dashed var(--mint);border-radius:12px;
-  background:#F2FAF7;color:#25806F;font-size:.9rem;cursor:pointer;
+  flex:1;padding:22px 8px;border:2px dashed var(--mint);border-radius:14px;
+  background:#E9F8F4;color:var(--teal-dark);font-size:.9rem;cursor:pointer;
 }
 .photo-btn .ico{font-size:1.8rem}
 .photo-btns{display:flex;gap:10px}
-#photoPreview{width:100%;border-radius:12px;display:block}
+#photoPreview{width:100%;border-radius:14px;display:block}
 .preview-wrap{position:relative}
 .preview-wrap .re-pick{
-  position:absolute;right:8px;top:8px;background:rgba(0,0,0,.55);color:#fff;
+  position:absolute;right:8px;top:8px;background:rgba(34,38,74,.6);color:#fff;
   padding:5px 10px;font-size:.75rem;border-radius:8px;
 }
 
 /* ============ 食材确认列表 ============ */
 .ing-row{
   display:flex;align-items:center;gap:8px;padding:10px 2px;
-  border-bottom:1px solid #F3EFE6;
+  border-bottom:1px solid #EFF1F7;
 }
 .ing-row:last-child{border-bottom:none}
-.dot{width:18px;height:18px;border-radius:50%;flex:none;border:2px solid #fff;box-shadow:0 0 0 1px rgba(97,85,61,.25);background:#fff;padding:0}
-.dot-high{background:#E86A5A}.dot-medium{background:#E5B93E}.dot-low{background:#3BAF7C}.dot-unknown{background:#D8D2C6}
+.dot{width:18px;height:18px;border-radius:50%;flex:none;border:2px solid #fff;box-shadow:0 0 0 1px rgba(34,38,74,.25);background:#fff;padding:0}
+.dot-high{background:#E86A5A}.dot-medium{background:#E5B93E}.dot-low{background:#3BAF7C}.dot-unknown{background:#D5D9E4}
 .ing-main{flex:1;min-width:0}
 .ing-name{font-size:.95rem}
 .ing-note{display:block;font-size:.7rem;color:var(--ink-3)}
 .tag-inferred{
-  background:#FBEFE4;color:#A34A18;font-size:.68rem;padding:2px 7px;
+  background:#FDECEA;color:#C0392B;font-size:.68rem;padding:2px 7px;
   border-radius:6px;margin-left:6px;vertical-align:1px;
 }
 .amt{
-  background:#F3EFE6;color:var(--ink-2);font-size:.8rem;padding:6px 10px;
+  background:#EEF0F7;color:var(--ink-2);font-size:.8rem;padding:6px 10px;
   border-radius:8px;flex:none;min-width:52px;
 }
-.ing-del{color:#B8B0A0;font-size:1rem;padding:6px 8px;background:none;flex:none}
+.ing-del{color:#A6ACC0;font-size:1rem;padding:6px 8px;background:none;flex:none}
 .add-ing{display:flex;gap:8px;margin-top:10px}
 .add-ing input{flex:1}
 .add-ing button{flex:none}
@@ -116,48 +114,48 @@ nav#tabbar button.active{color:#25806F;font-weight:600}
 /* ============ 整餐 FODMAP 评估行（级别×含量 自动评分 + 手动改色） ============ */
 .meal-eval{
   display:flex;align-items:center;gap:8px;flex-wrap:wrap;
-  margin:14px 0 12px;padding:10px 12px;border-radius:10px;
-  background:#F8F6F1;font-size:.85rem;color:var(--ink-2);
+  margin:14px 0 12px;padding:10px 12px;border-radius:12px;
+  background:#F4F5FA;font-size:.85rem;color:var(--ink-2);
 }
 .ml-chip{padding:6px 14px;border-radius:14px;font-size:.85rem;font-weight:600;transition:transform .15s ease}
 .ml-chip:active{transform:scale(.94)}
 .ml-low{background:#E8F5EE;color:#1E7A4F}
 .ml-medium{background:#FBF4DC;color:#8A6D1A}
 .ml-high{background:#FBEBE8;color:#C0392B}
-.ml-unknown{background:#F3EFE6;color:#6B665C}
-.me-score{font-size:.78rem;font-weight:700;color:#9A5420}
-.me-auto{background:none;color:#25806F;font-size:.75rem;padding:4px 2px;text-decoration:underline}
+.ml-unknown{background:#EEF0F7;color:#5A637A}
+.me-score{font-size:.78rem;font-weight:700;color:#6C71C4} /* 蓝紫强调 */
+.me-auto{background:none;color:var(--teal-dark);font-size:.75rem;padding:4px 2px;text-decoration:underline}
 .me-hint{font-size:.72rem;color:var(--ink-3);margin-left:auto}
 
 /* ============ 餐次选择 chips（早餐/午餐/晚餐/点心） ============ */
 .mtype-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:5px}
 .mtype-chips button{
-  padding:8px 14px;border-radius:18px;background:#F3EFE6;font-size:.85rem;color:var(--ink-2);
+  padding:8px 14px;border-radius:18px;background:#EEF0F7;font-size:.85rem;color:var(--ink-2);
   display:inline-flex;align-items:center;gap:5px;
   transition:background .2s ease,color .2s ease,transform .15s ease;
 }
-.mtype-chips button.sel{background:#25806F;color:#fff;font-weight:600}
+.mtype-chips button.sel{background:var(--teal-dark);color:#fff;font-weight:600}
 .mtype-chips button:active{transform:scale(.96)}
 
 /* ============ 模板区 ============ */
 .tpl-scroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
 .tpl-chip{
-  flex:none;display:flex;align-items:center;gap:6px;background:#EFEAF7;color:#5B4E7A;
+  flex:none;display:flex;align-items:center;gap:6px;background:var(--peri-bg);color:var(--peri-text);
   padding:9px 12px;border-radius:20px;font-size:.85rem;
 }
-.tpl-chip .x{color:#B0A3CF;font-size:.9rem;padding:0 2px}
-.empty-tip{color:#B8B0A0;font-size:.85rem;padding:6px 2px}
+.tpl-chip .x{color:#A5A9E0;font-size:.9rem;padding:0 2px}
+.empty-tip{color:#A6ACC0;font-size:.85rem;padding:6px 2px}
 
 /* ============ 症状 chips ============ */
 .sym-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
 .sym-chips button{
-  padding:9px 16px;border-radius:20px;background:#F3EFE6;font-size:.9rem;color:var(--ink-2);
+  padding:9px 16px;border-radius:20px;background:#EEF0F7;font-size:.9rem;color:var(--ink-2);
   display:inline-flex;align-items:center;gap:6px;
 }
-.sym-chips button.sel{background:#25806F;color:#fff;font-weight:600}
+.sym-chips button.sel{background:var(--teal-dark);color:#fff;font-weight:600}
 .sev-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-.sev-row input[type=range]{flex:1;accent-color:#25806F}
-.sev-val{font-size:1.1rem;font-weight:700;color:#25806F;min-width:48px;text-align:center}
+.sev-row input[type=range]{flex:1;accent-color:var(--teal-dark)}
+.sev-val{font-size:1.1rem;font-weight:700;color:var(--teal-dark);min-width:48px;text-align:center}
 
 /* ============ 心情记录（仿 Bearable 电量式打分） ============ */
 .mood-face{display:flex;align-items:center;gap:8px;margin-bottom:10px}
@@ -166,7 +164,7 @@ nav#tabbar button.active{color:#25806F;font-weight:600}
 .mood-face .mf-t{font-size:.85rem;color:var(--ink-2)}
 .mood-gauge{display:flex;gap:4px;margin-bottom:12px}
 .mood-seg{
-  flex:1;height:24px;border-radius:7px;background:#F3EFE6;padding:0;
+  flex:1;height:24px;border-radius:7px;background:#E9ECF5;padding:0;
   transition:background .2s ease,transform .1s ease;
 }
 .mood-seg:active{transform:scaleY(.85)}
@@ -174,49 +172,49 @@ nav#tabbar button.active{color:#25806F;font-weight:600}
 .mt-avg{font-size:.85rem;color:var(--ink-2)}
 .mt-trend{display:flex;align-items:flex-end;gap:3px;height:56px;margin-top:8px}
 .mt-bar{flex:1;border-radius:3px 3px 0 0;min-height:3px}
-.mt-bar.mt-empty{height:3px;min-height:3px;background:#E6DFD2;border-radius:2px}
+.mt-bar.mt-empty{height:3px;min-height:3px;background:#E2E5F0;border-radius:2px}
 
 /* ============ 时间线 ============ */
-.day-title{font-size:.85rem;font-weight:700;color:#9A5420;margin:16px 4px 8px} /* 暖橙强调：日期标记（AA 5.36:1） */
-.tl-item{position:relative;overflow:hidden;border-radius:14px;margin-bottom:10px}
+.day-title{font-size:.85rem;font-weight:700;color:#6C71C4;margin:16px 4px 8px} /* 蓝紫强调：日期标记 */
+.tl-item{position:relative;overflow:hidden;border-radius:16px;margin-bottom:10px}
 .tl-del{
-  position:absolute;right:0;top:0;bottom:0;width:76px;background:#C0392B;color:#fff; /* AA 白字 4.70:1 */
+  position:absolute;right:0;top:0;bottom:0;width:76px;background:#C0392B;color:#fff;
   display:flex;align-items:center;justify-content:center;font-size:.9rem;border-radius:0;
 }
 .tl-body{
-  position:relative;background:#fff;border-radius:14px;padding:12px 14px;
-  box-shadow:0 1px 4px rgba(97,85,61,.10);transition:transform .15s ease;
+  position:relative;background:#fff;border-radius:16px;padding:12px 14px;
+  box-shadow:0 4px 14px rgba(34,38,74,.07);transition:transform .15s ease;
   touch-action:pan-y;
 }
 .tl-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 .tl-head.folded{margin-bottom:0} /* 折叠后去掉头部下间距，卡片更紧凑 */
-.tl-time{font-size:.8rem;color:var(--ink-2);flex:none;background:#F3EFE6;border:none;padding:3px 8px;border-radius:7px}
+.tl-time{font-size:.8rem;color:var(--ink-2);flex:none;background:#EEF0F7;border:none;padding:3px 8px;border-radius:7px}
 .tl-lv{background:none;border:none;padding:2px;flex:none;display:inline-flex;align-items:center;border-radius:50%}
 .tl-lv:active{transform:scale(1.2)}
 .tl-dish{font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tl-thumb{width:40px;height:40px;object-fit:cover;border-radius:8px;flex:none}
 .tl-chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{
-  font-size:.75rem;padding:3px 9px;border-radius:12px;background:#F8F6F1;
-  border-left:4px solid #D8D2C6;color:var(--ink-2);
+  font-size:.75rem;padding:3px 9px;border-radius:12px;background:#F4F5FA;
+  border-left:4px solid #D5D9E4;color:var(--ink-2);
 }
 .chip.high{border-left-color:#E86A5A;background:#FBEBE8}
 .chip.medium{border-left-color:#E5B93E;background:#FBF4DC}
 .chip.low{border-left-color:#3BAF7C;background:#E8F5EE}
-.chip .inf{color:#A34A18}
+.chip .inf{color:#C0392B}
 .tl-note{font-size:.78rem;color:var(--ink-3);margin-top:6px}
 .tl-sym{display:flex;align-items:center;gap:8px}
-.tl-sym .ico{font-size:1.2rem;color:#9A5420}
+.tl-sym .ico{font-size:1.2rem;color:#C0392B}
 .sev-badge{margin-left:auto;font-size:.8rem;font-weight:700;padding:3px 9px;border-radius:10px;background:#FBEBE8;color:#C0392B}
 .sev-badge.ok{background:#E8F5EE;color:#1E7A4F} /* 无症状标记 */
 
 /* ---- 餐次徽标 + 单餐次折叠 ---- */
 .tl-mtype{
-  flex:none;background:#EFEAF7;color:#5B4E7A;font-size:.7rem;padding:3px 8px;border-radius:8px;
+  flex:none;background:var(--peri-bg);color:var(--peri-text);font-size:.7rem;padding:3px 8px;border-radius:8px;
   transition:background .2s ease;
 }
 .tl-fold{
-  flex:none;background:none;color:#A89F8E;padding:4px 2px;font-size:.82rem;border-radius:6px;
+  flex:none;background:none;color:#A6ACC0;padding:4px 2px;font-size:.82rem;border-radius:6px;
   display:inline-flex;align-items:center;
 }
 .tl-fold i{transition:transform .28s ease}
@@ -237,19 +235,19 @@ nav#tabbar button.active{color:#25806F;font-weight:600}
 .stat-bar{display:flex;height:22px;border-radius:11px;overflow:hidden;margin:8px 0 10px}
 .stat-bar div{transition:width .3s}
 .legend{display:flex;gap:14px;font-size:.8rem;color:var(--ink-2);flex-wrap:wrap;align-items:center}
-.trig-row{padding:10px 2px;border-bottom:1px solid #F3EFE6}
+.trig-row{padding:10px 2px;border-bottom:1px solid #EFF1F7}
 .trig-row:last-child{border-bottom:none}
 .trig-top{display:flex;align-items:center;gap:8px}
 .trig-name{font-size:.92rem;flex:1}
 .trig-rate{font-weight:700;font-size:.9rem}
-.trig-bar{height:6px;border-radius:3px;background:#F3EFE6;margin-top:6px}
+.trig-bar{height:6px;border-radius:3px;background:#EEF0F7;margin-top:6px}
 .trig-bar i{display:block;height:100%;border-radius:3px;background:#E86A5A}
 .trig-meta{font-size:.72rem;color:var(--ink-3);margin-top:4px}
-.low-sample{color:#A34A18;margin-left:6px}
+.low-sample{color:#C0392B;margin-left:6px}
 /* 绿色安心食材折叠区 */
-.safe-fold{margin-top:10px;border-top:1px dashed #E6DFD2;padding-top:10px}
+.safe-fold{margin-top:10px;border-top:1px dashed #E2E5F0;padding-top:10px}
 .safe-fold summary{
-  cursor:pointer;list-style:none;font-size:.85rem;color:#25806F;font-weight:600;
+  cursor:pointer;list-style:none;font-size:.85rem;color:var(--teal-dark);font-weight:600;
   display:flex;align-items:center;gap:6px;
 }
 .safe-fold summary::-webkit-details-marker{display:none}
@@ -260,16 +258,16 @@ nav#tabbar button.active{color:#25806F;font-weight:600}
 /* ---- 触发分析：左滑排除 ---- */
 .trig-item{position:relative;overflow:hidden}
 .trig-act{
-  position:absolute;right:0;top:0;bottom:0;width:76px;background:#6B665C;color:#fff;
+  position:absolute;right:0;top:0;bottom:0;width:76px;background:#5A637A;color:#fff;
   display:flex;align-items:center;justify-content:center;font-size:.85rem;border-radius:0;
 }
-.trig-act.restore{background:#25806F}
+.trig-act.restore{background:var(--teal-dark)}
 .trig-body{
   position:relative;background:#fff;transition:transform .15s ease;
   touch-action:pan-y;
 }
 /* 已排除食材独立模块：默认折叠仅展示数量，点按展开 */
-.ex-fold{margin-top:10px;border-top:1px dashed #E6DFD2;padding-top:6px}
+.ex-fold{margin-top:10px;border-top:1px dashed #E2E5F0;padding-top:6px}
 .ex-head{
   width:100%;background:none;display:flex;align-items:center;gap:6px;
   font-size:.85rem;color:var(--ink-2);font-weight:600;padding:8px 0;text-align:left;
@@ -286,7 +284,7 @@ nav#tabbar button.active{color:#25806F;font-weight:600}
 @keyframes sp{to{transform:rotate(360deg)}}
 .toast{
   position:fixed;left:50%;bottom:90px;transform:translateX(-50%);
-  background:rgba(0,0,0,.78);color:#fff;padding:10px 18px;border-radius:10px;
+  background:rgba(34,38,74,.88);color:#fff;padding:10px 18px;border-radius:10px;
   font-size:.85rem;z-index:99;max-width:86%;text-align:center;
 }
 
@@ -299,28 +297,28 @@ nav#tabbar button.active{color:#25806F;font-weight:600}
 .ba-set button[data-lv=high]{background:#FBEBE8;color:#C0392B}
 .ba-set button[data-lv=medium]{background:#FBF4DC;color:#8A6D1A}
 .ba-set button[data-lv=low]{background:#E8F5EE;color:#1E7A4F}
-.ba-set button[data-lv=unknown]{background:#F3EFE6;color:#6B665C}
-.ba-row{display:flex;align-items:center;gap:8px;padding:8px 2px;border-bottom:1px solid #F3EFE6}
+.ba-set button[data-lv=unknown]{background:#EEF0F7;color:#5A637A}
+.ba-row{display:flex;align-items:center;gap:8px;padding:8px 2px;border-bottom:1px solid #EFF1F7}
 .ba-row:last-child{border-bottom:none}
-.ba-check{width:18px;height:18px;accent-color:#25806F;flex:none;margin:0}
+.ba-check{width:18px;height:18px;accent-color:var(--teal-dark);flex:none;margin:0}
 .ba-name{flex:1;font-size:.9rem;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ba-count{font-size:.72rem;color:var(--ink-3);flex:none}
 #baList{max-height:320px;overflow-y:auto;-webkit-overflow-scrolling:touch}
 
 /* ============ 日历视图 ============ */
 .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.cal-nav{width:36px;height:32px;background:#F3EFE6;color:#25806F;font-size:1rem;border-radius:8px}
+.cal-nav{width:36px;height:32px;background:#EEF0F7;color:var(--teal-dark);font-size:1rem;border-radius:8px}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
 .cal-week{font-size:.72rem;color:var(--ink-3);text-align:center;margin-bottom:4px}
 .cal-cell{
   aspect-ratio:1;display:flex;align-items:center;justify-content:center;
-  font-size:.82rem;border-radius:8px;background:#F8F6F1;color:var(--ink-2);position:relative;
+  font-size:.82rem;border-radius:10px;background:#F1F3F9;color:var(--ink-2);position:relative;
 }
-.cal-cell.other{color:#CFC8BA;background:transparent}
+.cal-cell.other{color:#C3C7D6;background:transparent}
 .cal-cell.today{box-shadow:inset 0 0 0 1.5px var(--sky);font-weight:700} /* 亮天蓝强调：今日 */
 .cal-cell.has-sym{color:#fff;font-weight:600}
-.cal-cell.no-sym{background:#E3F4EE}
-.cal-cell .meal-dot{position:absolute;bottom:3px;width:4px;height:4px;border-radius:50%;background:#25806F}
+.cal-cell.no-sym{background:#DFF2EA}
+.cal-cell .meal-dot{position:absolute;bottom:3px;width:4px;height:4px;border-radius:50%;background:var(--teal-dark)}
 .cal-dot{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:-1px;margin-right:3px}
 
 /* ============ FontAwesome 图标规范 ============ */
@@ -328,7 +326,7 @@ nav#tabbar button.active{color:#25806F;font-weight:600}
 .card h2 i{font-size:1.1em}
 button i, .tl-sym .ico i, .sym-chips i, .legend i{font-size:.9em}
 .fa-btn{transition:opacity .2s ease, transform .2s ease, filter .2s ease;opacity:.85}
-.fa-btn:hover{opacity:1;transform:scale(1.05);filter:drop-shadow(0 1px 2px rgba(61,58,52,.35))}
+.fa-btn:hover{opacity:1;transform:scale(1.05);filter:drop-shadow(0 1px 2px rgba(32,41,74,.35))}
 /* CDN 加载失败降级：隐藏图标字体元素，显示降级文字/色点 */
 body.no-fa .fa-only{display:none!important}
 .fa-fallback{display:none}
@@ -336,14 +334,14 @@ body.no-fa .fa-fallback{display:inline}
 
 /* 通用模态对话框（替代不兼容的 prompt/confirm） */
 #modalMask{
-  display:none;position:fixed;inset:0;z-index:50;background:rgba(61,58,52,.45);
+  display:none;position:fixed;inset:0;z-index:50;background:rgba(34,38,74,.45);
   align-items:center;justify-content:center;padding:24px;
 }
 #modalMask.show{display:flex}
-.modal-box{background:#fff;border-radius:16px;padding:18px;width:100%;max-width:340px}
+.modal-box{background:#fff;border-radius:18px;padding:18px;width:100%;max-width:340px}
 .modal-box h3{font-size:1rem;margin-bottom:8px}
 .modal-box .mdesc{font-size:.85rem;color:var(--ink-2);margin-bottom:12px}
 .modal-btns{display:flex;gap:8px;margin-top:14px}
 .modal-btns button{flex:1;padding:11px;font-size:.95rem;border-radius:10px}
-.modal-btns .m-ok{background:#25806F;color:#fff;font-weight:600}
-.modal-btns .m-cancel{background:#F3EFE6;color:var(--ink-2)}
+.modal-btns .m-ok{background:var(--teal-dark);color:#fff;font-weight:600}
+.modal-btns .m-cancel{background:#EEF0F7;color:var(--ink-2)}

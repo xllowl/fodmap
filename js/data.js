@@ -120,11 +120,11 @@ export function moodFace(score){
   if(score <= 8) return {i:'fa-face-smile',      t:'不错'};
   return              {i:'fa-face-laugh-beam', t:'很好'};
 }
-/* 心情评分 → 三档配色（条段色 seg / 浅底 bg / 文字 fg） */
+/* 心情评分 → 三档配色（条段色 seg / 浅底 bg / 文字 fg），好档取 Bearable 青绿 */
 export function moodTier(score){
   if(score <= 3) return {seg:'#E86A5A', bg:'#FBEBE8', fg:'#C0392B'};
   if(score <= 6) return {seg:'#E5B93E', bg:'#FBF4DC', fg:'#8A6D1A'};
-  return              {seg:'#3BAF7C', bg:'#E8F5EE', fg:'#1E7A4F'};
+  return              {seg:'#2BB39A', bg:'#E8F5EE', fg:'#1E7A4F'};
 }
 
 /* 用餐类型：正餐 3 餐 + 点心 */
