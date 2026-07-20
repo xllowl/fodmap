@@ -52,7 +52,13 @@
       <input type="text" id="addIngInput" placeholder="手动添加食材">
       <button class="btn-ghost" id="addIngBtn">添加</button>
     </div>
-    <div style="height:12px"></div>
+    <div class="meal-eval">
+      <span>整餐 FODMAP</span>
+      <button type="button" id="mealLevelChip" class="ml-chip ml-unknown" title="点按修改整餐颜色">–</button>
+      <span class="me-score" id="mealScore"></span>
+      <button type="button" id="mealLevelAuto" class="me-auto" style="display:none">恢复自动</button>
+      <span class="me-hint">按 级别×含量 自动评估，点色块可改</span>
+    </div>
     <button class="btn-primary" id="saveMealBtn">保存记录</button>
   </div>
 

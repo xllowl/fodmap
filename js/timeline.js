@@ -2,7 +2,8 @@
  * Tab2 时间线：日历视图 + 按天分组倒序 + 左滑删除
  *              + 餐次徽标（早/午/晚/点心）+ 单餐次折叠展开
  * ================================================================== */
-import { AMT_SHORT, SYM_TYPES, MEAL_TYPES, MEAL_TYPE_MAP, mealTypeOf } from './data.js';
+import { AMT_SHORT, SYM_TYPES, MEAL_TYPES, MEAL_TYPE_MAP, mealTypeOf,
+         LEVEL_TEXT, evalMealScore, mealLevelOf, mealScoreOf } from './data.js';
 import { $, esc, pad, dayKey, hm, dtLocalVal, toast, showConfirm, showModal,
          lvlIcon, symIcon, attachSwipe, setFold } from './util.js';
 import { dbAll, dbDel, dbPut } from './db.js';
@@ -93,11 +94,11 @@ function buildTimelineItem(it){
       (cnt.medium ? '<span class="sum-item">' + lvlIcon('medium') + '×' + cnt.medium + '</span>' : '') +
       (cnt.low    ? '<span class="sum-item">' + lvlIcon('low')    + '×' + cnt.low    + '</span>' : '') +
       (cnt.unknown? '<span class="sum-item">' + lvlIcon('unknown')+ '×' + cnt.unknown+ '</span>' : '') +
-      '<span class="sum-item">共 ' + it.ingredients.length + ' 种食材</span>';
+      '<span class="sum-item">共 ' + it.ingredients.length + ' 种食材 · 评分 ' + mealScoreOf(it) + '</span>';
     body.innerHTML =
       '<div class="tl-head">' +
         '<button class="tl-time" data-act="time" title="点按修改时间">' + hm(it.time) + '</button>' +
-        '<span>' + lvlIcon(it.maxLevel) + '</span>' +
+        '<button class="tl-lv" data-act="lv" title="整餐级别（评分 ' + mealScoreOf(it) + '），点按修改颜色">' + lvlIcon(mealLevelOf(it)) + '</button>' +
         '<span class="tl-dish">' + esc(it.dishName) + '</span>' +
         '<button class="tl-mtype" data-act="mtype" title="点按切换餐次">' + mt.t + '</button>' +
         '<button class="tl-fold" data-act="fold" aria-label="折叠/展开餐次"><i class="fa-solid fa-chevron-up fa-only" aria-hidden="true"></i><span class="fa-fallback">▴</span></button>' +
@@ -126,6 +127,20 @@ function buildTimelineItem(it){
       folded = !folded;
       setMealCollapsed(it.id, folded);
       applyFold(folded, true);
+    });
+
+    // ---- 整餐色点：点按循环 低→中→高 修改颜色（标记为手动级别，批量调整不再覆盖） ----
+    const lvBtn = body.querySelector('[data-act=lv]');
+    lvBtn.addEventListener('click', async ()=>{
+      const order = ['low','medium','high'];
+      const next = order[(order.indexOf(mealLevelOf(it))+1) % order.length];
+      it.level = next;
+      it.levelManual = true;
+      it.score = mealScoreOf(it);
+      delete it._kind;
+      await dbPut('meals', it);
+      lvBtn.innerHTML = lvlIcon(next);
+      toast('整餐颜色已改为「' + LEVEL_TEXT[next] + '」');
     });
 
     // ---- 餐次徽标：点按循环切换 早餐→午餐→晚餐→点心 ----

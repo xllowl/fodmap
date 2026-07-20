@@ -4,6 +4,7 @@
  * ================================================================== */
 import { $, esc, toast, lvlIcon, attachSwipe, setFold } from './util.js';
 import { dbAll } from './db.js';
+import { mealLevelOf } from './data.js';
 import { fodmapLevel, canonName, loadExcluded, setExcluded } from './store.js';
 
 export async function renderStats(){
@@ -14,7 +15,7 @@ export async function renderStats(){
   const since = Date.now() - 30*864e5;
   const recent = meals.filter(m=> m.time >= since);
   const cnt = {high:0, medium:0, low:0, unknown:0};
-  recent.forEach(m=> cnt[m.maxLevel || 'unknown']++);
+  recent.forEach(m=> cnt[mealLevelOf(m)]++);
   const total = recent.length;
   const box = $('levelStats');
   if(!total){ box.innerHTML = '<div class="empty-tip">近 30 天暂无饮食记录</div>'; }

@@ -1,8 +1,9 @@
 /* ==================================================================
  * Tab4 我的：API 设置 / 数据管理 / FODMAP 批量调整
  * ================================================================== */
-import { LEVEL_TEXT, LEVEL_ORDER, LEVEL_EMOJI, LVL_CYCLE, AMT_SHORT,
-         MEAL_TYPE_MAP, mealTypeOf } from './data.js';
+import { LEVEL_TEXT, LEVEL_EMOJI, LVL_CYCLE, AMT_SHORT,
+         MEAL_TYPE_MAP, mealTypeOf,
+         evalMealScore, mealLevelFromScore, mealLevelOf, mealScoreOf } from './data.js';
 import { $, esc, dayKey, hm, toast, showConfirm, download } from './util.js';
 import { dbAll, dbPut, dbClear } from './db.js';
 import { loadCustom, saveCustomLevel, canonName, fodmapLevel,
@@ -42,7 +43,7 @@ async function exportMarkdown(){
       md += '## 饮食\n';
       ms.forEach(m=>{
         const mt = MEAL_TYPE_MAP[mealTypeOf(m)];
-        md += '- ' + hm(m.time) + ' [' + mt.t + '] ' + m.dishName + ' ' + LEVEL_EMOJI[m.maxLevel] + '\n';
+        md += '- ' + hm(m.time) + ' [' + mt.t + '] ' + m.dishName + ' ' + LEVEL_EMOJI[mealLevelOf(m)] + '(评分' + mealScoreOf(m) + ')\n';
         md += '  - ' + m.ingredients.map(g=>
           g.name + (g.inferred ? '[推测]' : '') + '(' + (AMT_SHORT[g.amount]||'中') + LEVEL_EMOJI[g.fodmap] + ')'
         ).join(' ') + '\n';
@@ -64,7 +65,7 @@ async function exportMarkdown(){
 /* ==================================================================
  * FODMAP 批量调整
  * 统一修改全局食材级别：写入自定义表（查表优先级最高），
- * 并同步重写全部历史餐次/模板中的对应级别与 maxLevel，
+ * 并同步重写全部历史餐次/模板中的对应级别与整餐评分，
  * 最后实时重绘时间线与统计分析，保证数据一致性。
  * ================================================================== */
 const baSelected = new Set(); // 当前勾选的食材名
@@ -81,7 +82,9 @@ async function applyLevelToFoods(names, level){
       if(nameSet.has(g.name) || nameSet.has(canonName(g.name))){ g.fodmap = level; ch = true; }
     });
     if(ch){
-      m.maxLevel = m.ingredients.reduce((mx,g)=> (LEVEL_ORDER[g.fodmap]||0) > (LEVEL_ORDER[mx]||0) ? g.fodmap : mx, 'unknown');
+      // 重新评估整餐评分与级别；用户手动确认过颜色的餐次保留其级别
+      m.score = evalMealScore(m.ingredients);
+      if(!m.levelManual) m.level = mealLevelFromScore(m.score);
       await dbPut('meals', m);
       touched++;
     }

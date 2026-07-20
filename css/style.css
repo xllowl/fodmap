@@ -113,6 +113,22 @@ nav#tabbar button.active{color:#25806F;font-weight:600}
 .add-ing input{flex:1}
 .add-ing button{flex:none}
 
+/* ============ 整餐 FODMAP 评估行（级别×含量 自动评分 + 手动改色） ============ */
+.meal-eval{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  margin:14px 0 12px;padding:10px 12px;border-radius:10px;
+  background:#F8F6F1;font-size:.85rem;color:var(--ink-2);
+}
+.ml-chip{padding:6px 14px;border-radius:14px;font-size:.85rem;font-weight:600;transition:transform .15s ease}
+.ml-chip:active{transform:scale(.94)}
+.ml-low{background:#E8F5EE;color:#1E7A4F}
+.ml-medium{background:#FBF4DC;color:#8A6D1A}
+.ml-high{background:#FBEBE8;color:#C0392B}
+.ml-unknown{background:#F3EFE6;color:#6B665C}
+.me-score{font-size:.78rem;font-weight:700;color:#9A5420}
+.me-auto{background:none;color:#25806F;font-size:.75rem;padding:4px 2px;text-decoration:underline}
+.me-hint{font-size:.72rem;color:var(--ink-3);margin-left:auto}
+
 /* ============ 餐次选择 chips（早餐/午餐/晚餐/点心） ============ */
 .mtype-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:5px}
 .mtype-chips button{
@@ -158,6 +174,8 @@ nav#tabbar button.active{color:#25806F;font-weight:600}
 .tl-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 .tl-head.folded{margin-bottom:0} /* 折叠后去掉头部下间距，卡片更紧凑 */
 .tl-time{font-size:.8rem;color:var(--ink-2);flex:none;background:#F3EFE6;border:none;padding:3px 8px;border-radius:7px}
+.tl-lv{background:none;border:none;padding:2px;flex:none;display:inline-flex;align-items:center;border-radius:50%}
+.tl-lv:active{transform:scale(1.2)}
 .tl-dish{font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tl-thumb{width:40px;height:40px;object-fit:cover;border-radius:8px;flex:none}
 .tl-chips{display:flex;flex-wrap:wrap;gap:6px}

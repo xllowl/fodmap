@@ -1,8 +1,9 @@
 /* ==================================================================
  * Tab1 记录：拍照分析 / 食材确认 / 模板 / 症状记录
  * ================================================================== */
-import { SYS_PROMPT, FODMAP_PROMPT, AMT_CYCLE, LVL_CYCLE, LEVEL_ORDER,
-         SYM_TYPES, MEAL_TYPES, deriveMealType } from './data.js';
+import { SYS_PROMPT, FODMAP_PROMPT, AMT_CYCLE, LVL_CYCLE, LEVEL_TEXT,
+         SYM_TYPES, MEAL_TYPES, deriveMealType,
+         evalMealScore, mealLevelFromScore } from './data.js';
 import { $, esc, toast, showConfirm, showPrompt, dtLocalVal, symIcon } from './util.js';
 import { dbAdd, dbAll, dbDel } from './db.js';
 import { lookupFodmap, fodmapLevel, saveCustomLevel, loadSettings } from './store.js';
@@ -12,7 +13,9 @@ export const state = {
   thumb: null,            // 200px base64（存库用）
   parsed: null,           // 待确认的解析结果 {dish, ingredients:[{name,amount,inferred,fodmap,manualLevel}]}
   mealType: null,         // 待确认记录的餐次（breakfast/lunch/dinner/snack）
-  mealTypeManual: false   // 用户是否手动选过餐次（未手动则跟随时间自动推断）
+  mealTypeManual: false,  // 用户是否手动选过餐次（未手动则跟随时间自动推断）
+  mealLevel: null,        // 待确认记录的整餐级别（high/medium/low）
+  mealLevelManual: false  // 用户是否手动改过整餐级别（未手动则按评分自动评估）
 };
 let switchTabFn = null;   // 由 main.js 注入，用于「未配置 API」时跳转到我的页
 
@@ -218,6 +221,18 @@ function renderConfirm(){
   renderIngList();
 }
 
+/* 整餐评估行：按 级别×含量 自动评分；手动改过则保留手动级别并显示「恢复自动」 */
+function updateMealEval(){
+  if(!state.parsed) return;
+  const score = evalMealScore(state.parsed.ingredients);
+  if(!state.mealLevelManual || !state.mealLevel) state.mealLevel = mealLevelFromScore(score);
+  const chip = $('mealLevelChip');
+  chip.className = 'ml-chip ml-' + state.mealLevel;
+  chip.textContent = LEVEL_TEXT[state.mealLevel];
+  $('mealScore').textContent = '评分 ' + score;
+  $('mealLevelAuto').style.display = state.mealLevelManual ? '' : 'none';
+}
+
 /* 餐次 chips：早餐/午餐/晚餐/点心 单选 */
 function renderMtypeChips(){
   const box = $('mtypeChips');
@@ -273,6 +288,7 @@ function renderIngList(){
     });
     list.appendChild(row);
   });
+  updateMealEval(); // 食材增删/改级/改量级后，刷新整餐评分
 }
 
 /* 批量调整联动：若确认界面有待保存记录，同步刷新其中的级别 */
@@ -311,6 +327,7 @@ export async function renderTemplates(){
         ingredients: t.ingredients.map(g=>({...g, manualLevel:false}))
       };
       state.mealType = null; state.mealTypeManual = false; // 按当前时间重新推断餐次
+      state.mealLevel = null; state.mealLevelManual = false; // 按模板食材重新评估整餐级别
       $('mealTimeInput').value = dtLocalVal(Date.now());
       renderConfirm();
       $('confirmCard').scrollIntoView({behavior:'smooth'});
@@ -353,6 +370,18 @@ export function initRecord(switchTab){
     renderIngList();
   });
   $('dishInput').addEventListener('input', ()=>{ if(state.parsed) state.parsed.dish = $('dishInput').value; });
+  // 整餐色块：点按循环 低→中→高，手动确认后不再被自动评估覆盖
+  $('mealLevelChip').addEventListener('click', ()=>{
+    if(!state.parsed) return;
+    const order = ['low','medium','high'];
+    state.mealLevel = order[(order.indexOf(state.mealLevel)+1) % order.length];
+    state.mealLevelManual = true;
+    updateMealEval();
+  });
+  $('mealLevelAuto').addEventListener('click', ()=>{
+    state.mealLevelManual = false;
+    updateMealEval();
+  });
   // 用餐时间变化时，若用户未手动选过餐次则自动跟随推断
   $('mealTimeInput').addEventListener('change', ()=>{
     if(state.parsed && !state.mealTypeManual){
@@ -371,12 +400,14 @@ export function initRecord(switchTab){
     const ingredients = state.parsed.ingredients.map(g=>({
       name: g.name, amount: g.amount, inferred: g.inferred, fodmap: g.fodmap
     }));
-    // 当餐最高级别
-    const maxLevel = ingredients.reduce((m,g)=> LEVEL_ORDER[g.fodmap] > LEVEL_ORDER[m] ? g.fodmap : m, 'unknown');
+    // 整餐评估：级别×含量 加权评分 + 手动确认级别（决定时间线/统计颜色）
+    const score = evalMealScore(ingredients);
+    const level = (state.mealLevelManual && state.mealLevel) ? state.mealLevel : mealLevelFromScore(score);
     await dbAdd('meals', {
       time, dishName: dish, note: $('noteInput').value.trim(),
       mealType: state.mealType || deriveMealType(time),
-      ingredients, maxLevel, thumbnail: state.thumb
+      ingredients, score, level, levelManual: !!state.mealLevelManual,
+      thumbnail: state.thumb
     });
     // 询问存为模板
     if(await showConfirm('已保存！', '要把「' + dish + '」存为模板吗？以后可一键记录同款。')){
@@ -389,6 +420,7 @@ export function initRecord(switchTab){
     // 重置记录区
     state.parsed = null; state.photo = null; state.thumb = null;
     state.mealType = null; state.mealTypeManual = false;
+    state.mealLevel = null; state.mealLevelManual = false;
     $('confirmCard').style.display = 'none';
     $('noteInput').value = '';
     $('mealTimeInput').value = '';
