@@ -4,15 +4,16 @@
  * ================================================================== */
 import { AMT_SHORT, SYM_TYPES, MEAL_TYPES, MEAL_TYPE_MAP, mealTypeOf,
          LEVEL_TEXT, evalMealScore, mealLevelOf, mealScoreOf,
-         moodFace, moodTier } from './data.js';
+         moodFace, moodTier, BRISTOL_TYPES } from './data.js';
 import { $, esc, pad, dayKey, hm, dtLocalVal, toast, showConfirm, showModal,
          lvlIcon, symIcon, attachSwipe, setFold } from './util.js';
 import { dbAll, dbDel, dbPut } from './db.js';
 import { isMealCollapsed, setMealCollapsed } from './store.js';
 
-/* ============ 日历视图：每日症状着色 + 饮食小点 ============ */
+/* ============ 日历视图：每日症状着色 + 饮食小点；点日期切换查看 ============ */
 let calCursor = new Date(); // 当前显示的月份
 calCursor.setDate(1);
+let selDay = dayKey(Date.now()); // 当前查看的日期（时间线只显示这一天）
 
 function renderCalendar(meals, symps){
   // 按天聚合：当日最高严重度 + 是否有饮食记录 + 显式无症状标记
@@ -47,33 +48,46 @@ function renderCalendar(meals, symps){
         cell.title = '当日最高症状严重度 ' + sev + '/10';
       }else if(mealSet[k] || noneSet[k]){ cell.classList.add('no-sym'); } // 有记录但无症状 / 主动标记无症状
       if(k === todayK) cell.classList.add('today');
-      if(mealSet[k]){ const dot = document.createElement('span'); dot.className = 'meal-dot'; cell.appendChild(dot); }
+      if(k === selDay) cell.classList.add('sel'); // 当前查看的日期
+      if(mealSet[k]){ const dot = document.createElement('span'); dot.classList.add('meal-dot'); cell.appendChild(dot); }
+      // 点日期切换查看的记录
+      cell.addEventListener('click', ()=>{ selDay = k; renderTimeline(); });
     }
     grid.appendChild(cell);
   }
 }
 
-/* ============ 时间线列表 ============ */
+/* ============ 时间线列表：只显示选中日期的记录 ============ */
 export async function renderTimeline(){
   const meals = (await dbAll('meals')).map(m=>({...m, _kind:'meal'}));
   const symps = (await dbAll('symptoms')).map(s=>({...s, _kind:'sym'}));
   const moods = (await dbAll('moods')).map(m=>({...m, _kind:'mood'}));
+  const bowels = (await dbAll('bowels')).map(b=>({...b, _kind:'bowel'}));
   renderCalendar(meals, symps);
-  const items = meals.concat(symps, moods).sort((a,b)=> b.time - a.time);
+  const items = meals.concat(symps, moods, bowels)
+    .filter(it=> dayKey(it.time) === selDay)
+    .sort((a,b)=> b.time - a.time);
   const box = $('timelineList');
   box.innerHTML = '';
-  if(!items.length){ box.innerHTML = '<div class="card empty-tip">还没有记录，去「记录」页开始吧</div>'; return; }
-  let lastDay = '';
-  items.forEach(it=>{
-    const dk = dayKey(it.time);
-    if(dk !== lastDay){
-      lastDay = dk;
-      const h = document.createElement('div');
-      h.className = 'day-title'; h.textContent = dk;
-      box.appendChild(h);
-    }
-    box.appendChild(buildTimelineItem(it));
+  // 日期标题：今天标注；查看历史日期时提供「回到今天」
+  const isToday = selDay === dayKey(Date.now());
+  const h = document.createElement('div');
+  h.className = 'day-title';
+  h.innerHTML = '<span>' + esc(selDay) + (isToday ? ' · 今天' : '') + '</span>' +
+    (isToday ? '' : '<button id="backToday" class="back-today">回到今天</button>');
+  box.appendChild(h);
+  if(!isToday) h.querySelector('#backToday').addEventListener('click', ()=>{
+    selDay = dayKey(Date.now());
+    renderTimeline();
   });
+  if(!items.length){
+    const tip = document.createElement('div');
+    tip.className = 'card empty-tip';
+    tip.textContent = '这一天还没有记录，去「记录」页添加吧';
+    box.appendChild(tip);
+    return;
+  }
+  items.forEach(it=> box.appendChild(buildTimelineItem(it)));
 }
 
 /* 生成单个时间线条目（饮食或症状） */
@@ -170,7 +184,7 @@ function buildTimelineItem(it){
         (none ? '<span class="sev-badge ok">无症状</span>' : '<span class="sev-badge">' + it.severity + '/10</span>') +
       '</div>' +
       (it.note ? '<div class="tl-note">' + esc(it.note) + '</div>' : '');
-  }else{ // mood 心情条目
+  }else if(it._kind === 'mood'){
     const f = moodFace(it.score), t = moodTier(it.score);
     body.innerHTML =
       '<div class="tl-sym">' +
@@ -178,6 +192,16 @@ function buildTimelineItem(it){
         '<button class="tl-time" data-act="time" title="点按修改时间">' + hm(it.time) + '</button>' +
         '<span>心情 · ' + f.t + '</span>' +
         '<span class="sev-badge" style="background:' + t.bg + ';color:' + t.fg + '">' + it.score + '/10</span>' +
+      '</div>' +
+      (it.note ? '<div class="tl-note">' + esc(it.note) + '</div>' : '');
+  }else{ // bowel 排便条目（布里斯托类型）
+    const b = BRISTOL_TYPES.find(x=> x.n === it.type) || BRISTOL_TYPES[3];
+    body.innerHTML =
+      '<div class="tl-sym">' +
+        '<span class="ico" style="color:' + b.c + '">' + symIcon('fa-poop', '排便') + '</span>' +
+        '<button class="tl-time" data-act="time" title="点按修改时间">' + hm(it.time) + '</button>' +
+        '<span>排便 · ' + b.t + '</span>' +
+        '<span class="sev-badge" style="background:' + b.bg + ';color:' + b.fg + '">类型 ' + b.n + '</span>' +
       '</div>' +
       (it.note ? '<div class="tl-note">' + esc(it.note) + '</div>' : '');
   }
@@ -198,13 +222,14 @@ function buildTimelineItem(it){
 }
 
 /* 条目类型 → IndexedDB store 名 */
-const STORE_OF = {meal:'meals', sym:'symptoms', mood:'moods'};
+const STORE_OF = {meal:'meals', sym:'symptoms', mood:'moods', bowel:'bowels'};
 
-/* 修改条目时间（饮食/症状/心情通用），保存后刷新时间线 */
+/* 修改条目时间（饮食/症状/心情/排便通用），保存后刷新时间线 */
 async function editItemTime(it){
   const storeName = STORE_OF[it._kind];
   const desc = it._kind === 'meal' ? ('「' + it.dishName + '」的用餐时间')
            : it._kind === 'mood' ? '「心情」的记录时间'
+           : it._kind === 'bowel' ? '「排便」的记录时间'
            : ('「' + it.type + '」的记录时间');
   const v = await showModal({
     title: '修改时间',

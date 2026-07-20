@@ -3,7 +3,7 @@
  * ================================================================== */
 import { SYS_PROMPT, FODMAP_PROMPT, AMT_CYCLE, LVL_CYCLE, LEVEL_TEXT,
          SYM_TYPES, MEAL_TYPES, deriveMealType, moodFace, moodTier,
-         evalMealScore, mealLevelFromScore } from './data.js';
+         BRISTOL_TYPES, evalMealScore, mealLevelFromScore } from './data.js';
 import { $, esc, toast, showConfirm, showPrompt, dtLocalVal, symIcon } from './util.js';
 import { dbAdd, dbAll, dbDel } from './db.js';
 import { lookupFodmap, fodmapLevel, saveCustomLevel, loadSettings } from './store.js';
@@ -361,6 +361,30 @@ function renderMood(){
 }
 
 /* ==================================================================
+ * 排便记录：布里斯托 1-7 型选择（仿 Bearable 排便卡片）
+ * ================================================================== */
+let bristolSel = 4; // 默认理想型
+function renderBristol(){
+  const grid = $('bristolGrid');
+  grid.innerHTML = '';
+  BRISTOL_TYPES.forEach(b=>{
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    if(bristolSel === b.n){ btn.style.borderColor = b.c; btn.style.background = b.bg; }
+    btn.innerHTML = '<span class="bn" style="color:' + b.c + '">' + b.n + '</span>' +
+                    '<span class="bt">' + b.t + '</span>';
+    btn.setAttribute('aria-label', '类型 ' + b.n + ' ' + b.t);
+    btn.addEventListener('click', ()=>{ bristolSel = b.n; renderBristol(); });
+    grid.appendChild(btn);
+  });
+  const cur = BRISTOL_TYPES.find(b=> b.n === bristolSel);
+  const d = $('bristolDesc');
+  d.style.background = cur.bg;
+  d.style.color = cur.fg;
+  d.textContent = '类型 ' + cur.n + ' · ' + cur.t + '：' + cur.d;
+}
+
+/* ==================================================================
  * 症状记录：chips + 滑块，两步完成；选「无症状」时隐藏严重度（severity=0）
  * ================================================================== */
 let selSym = null;
@@ -474,9 +498,17 @@ export function initRecord(switchTab){
     toast('心情已记录 ' + moodScore + '/10');
   });
 
+  $('saveBowelBtn').addEventListener('click', async ()=>{
+    const cur = BRISTOL_TYPES.find(b=> b.n === bristolSel);
+    await dbAdd('bowels', {time: Date.now(), type: bristolSel, note: $('bowelNote').value.trim()});
+    $('bowelNote').value = '';
+    toast('排便已记录：类型 ' + bristolSel + ' ' + cur.t);
+  });
+
   renderTemplates();
   renderSymChips();
   renderMood();
+  renderBristol();
   renderPhotoPicker();
   $('mealTimeInput').value = dtLocalVal(Date.now());
 }

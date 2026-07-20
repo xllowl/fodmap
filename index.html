@@ -94,6 +94,17 @@
     </label>
     <button class="btn-primary" id="saveSymBtn">保存症状</button>
   </div>
+
+  <div class="card">
+    <h2><i class="fa-solid fa-poop" aria-hidden="true"></i>排便记录</h2>
+    <div class="sub">布里斯托大便分类法（1-7 型），点选对应类型</div>
+    <div class="bristol-grid" id="bristolGrid"></div>
+    <div class="bristol-desc" id="bristolDesc"></div>
+    <label class="field" style="margin-top:10px">备注（可选）
+      <input type="text" id="bowelNote" placeholder="如：排便费力">
+    </label>
+    <button class="btn-primary" id="saveBowelBtn">保存排便记录</button>
+  </div>
 </section>
 
 <!-- ================= Tab2 时间线 ================= -->
@@ -115,7 +126,7 @@
       <span><i class="cal-dot" style="background:#E3F4EE"></i>无症状</span>
     </div>
   </div>
-  <div class="card" style="font-size:.8rem;color:var(--ink-3)">左滑条目可删除；点条目右侧箭头可折叠/展开餐次，点餐次徽标可切换 早/午/晚/点心</div>
+  <div class="card" style="font-size:.8rem;color:var(--ink-3)">点日历日期切换查看当天记录；左滑条目可删除；点箭头折叠餐次，点餐次徽标切换 早/午/晚/点心</div>
   <div id="timelineList"></div>
 </section>
 

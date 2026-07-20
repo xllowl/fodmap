@@ -157,6 +157,21 @@ nav#tabbar button.active{color:#3ED6B5;font-weight:600} /* 亮青绿高亮 */
 .sev-row input[type=range]{flex:1;accent-color:var(--teal-dark)}
 .sev-val{font-size:1.1rem;font-weight:700;color:var(--teal-dark);min-width:48px;text-align:center}
 
+/* ============ 排便记录（布里斯托 1-7 型选择器） ============ */
+.bristol-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:8px}
+.bristol-grid button{
+  padding:8px 0 6px;border-radius:10px;background:#EEF0F7;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  border:2px solid transparent;transition:transform .1s ease,background .2s ease,border-color .2s ease;
+}
+.bristol-grid button:active{transform:scale(.94)}
+.bristol-grid .bn{font-size:1.05rem;font-weight:800;line-height:1}
+.bristol-grid .bt{font-size:.62rem;color:var(--ink-3)}
+.bristol-desc{
+  font-size:.8rem;padding:8px 10px;border-radius:10px;
+  transition:background .2s ease,color .2s ease;
+}
+
 /* ============ 心情记录（仿 Bearable 电量式打分） ============ */
 .mood-face{display:flex;align-items:center;gap:8px;margin-bottom:10px}
 .mood-face .mf-ico{font-size:1.8rem;line-height:1}
@@ -175,7 +190,11 @@ nav#tabbar button.active{color:#3ED6B5;font-weight:600} /* 亮青绿高亮 */
 .mt-bar.mt-empty{height:3px;min-height:3px;background:#E2E5F0;border-radius:2px}
 
 /* ============ 时间线 ============ */
-.day-title{font-size:.85rem;font-weight:700;color:#6C71C4;margin:16px 4px 8px} /* 蓝紫强调：日期标记 */
+.day-title{font-size:.85rem;font-weight:700;color:#6C71C4;margin:16px 4px 8px;display:flex;align-items:center;gap:8px} /* 蓝紫强调：日期标记 */
+.back-today{
+  background:var(--peri-bg);color:var(--peri-text);font-size:.72rem;font-weight:600;
+  padding:3px 10px;border-radius:10px;
+}
 .tl-item{position:relative;overflow:hidden;border-radius:16px;margin-bottom:10px}
 .tl-del{
   position:absolute;right:0;top:0;bottom:0;width:76px;background:#C0392B;color:#fff;
@@ -313,8 +332,10 @@ nav#tabbar button.active{color:#3ED6B5;font-weight:600} /* 亮青绿高亮 */
 .cal-cell{
   aspect-ratio:1;display:flex;align-items:center;justify-content:center;
   font-size:.82rem;border-radius:10px;background:#F1F3F9;color:var(--ink-2);position:relative;
+  cursor:pointer;transition:background .2s ease,color .2s ease,box-shadow .2s ease;
 }
-.cal-cell.other{color:#C3C7D6;background:transparent}
+.cal-cell.other{color:#C3C7D6;background:transparent;cursor:default}
+.cal-cell.sel{box-shadow:inset 0 0 0 2px var(--peri);font-weight:700} /* 当前查看的日期 */
 .cal-cell.today{box-shadow:inset 0 0 0 1.5px var(--sky);font-weight:700} /* 亮天蓝强调：今日 */
 .cal-cell.has-sym{color:#fff;font-weight:600}
 .cal-cell.no-sym{background:#DFF2EA}

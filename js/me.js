@@ -2,7 +2,7 @@
  * Tab4 我的：API 设置 / 数据管理 / FODMAP 批量调整
  * ================================================================== */
 import { LEVEL_TEXT, LEVEL_EMOJI, LVL_CYCLE, AMT_SHORT,
-         MEAL_TYPE_MAP, mealTypeOf,
+         MEAL_TYPE_MAP, mealTypeOf, BRISTOL_TYPES,
          evalMealScore, mealLevelFromScore, mealLevelOf, mealScoreOf } from './data.js';
 import { $, esc, dayKey, hm, toast, showConfirm, download } from './util.js';
 import { dbAll, dbPut, dbClear } from './db.js';
@@ -29,10 +29,12 @@ async function exportMarkdown(){
   const meals = await dbAll('meals');
   const symps = await dbAll('symptoms');
   const moods = await dbAll('moods');
-  if(!meals.length && !symps.length && !moods.length){ toast('暂无数据可导出'); return; }
+  const bowels = await dbAll('bowels');
+  if(!meals.length && !symps.length && !moods.length && !bowels.length){ toast('暂无数据可导出'); return; }
   const items = meals.map(m=>({...m,_kind:'meal'}))
     .concat(symps.map(s=>({...s,_kind:'sym'})))
     .concat(moods.map(m=>({...m,_kind:'mood'})))
+    .concat(bowels.map(b=>({...b,_kind:'bowel'})))
     .sort((a,b)=> a.time - b.time); // 每天内部按时间正序
   const days = {};
   items.forEach(it=>{ (days[dayKey(it.time)] = days[dayKey(it.time)] || []).push(it); });
@@ -42,6 +44,7 @@ async function exportMarkdown(){
     const ms = days[dk].filter(x=>x._kind==='meal');
     const ss = days[dk].filter(x=>x._kind==='sym');
     const ds = days[dk].filter(x=>x._kind==='mood');
+    const bs = days[dk].filter(x=>x._kind==='bowel');
     if(ms.length){
       md += '## 饮食\n';
       ms.forEach(m=>{
@@ -63,6 +66,13 @@ async function exportMarkdown(){
       md += '## 心情\n';
       ds.forEach(m=>{
         md += '- ' + hm(m.time) + ' 心情 ' + m.score + '/10' + (m.note ? '（' + m.note + '）' : '') + '\n';
+      });
+    }
+    if(bs.length){
+      md += '## 排便\n';
+      bs.forEach(b=>{
+        const bt = BRISTOL_TYPES.find(x=> x.n === b.type);
+        md += '- ' + hm(b.time) + ' 类型' + b.type + (bt ? ' ' + bt.t : '') + (b.note ? '（' + b.note + '）' : '') + '\n';
       });
     }
     md += '\n';
@@ -175,14 +185,15 @@ export function initMe(){
     toast('设置已保存');
   });
 
-  /* 导出 JSON 备份（四个 store 全量 + 自定义级别表） */
+  /* 导出 JSON 备份（五个 store 全量 + 自定义级别表） */
   $('expJsonBtn').addEventListener('click', async ()=>{
     const data = {
-      version: 2, exportedAt: new Date().toISOString(),
+      version: 3, exportedAt: new Date().toISOString(),
       meals: await dbAll('meals'),
       symptoms: await dbAll('symptoms'),
       templates: await dbAll('templates'),
       moods: await dbAll('moods'),
+      bowels: await dbAll('bowels'),
       customLevels: loadCustom()
     };
     download('fodmap-backup-' + dayKey(Date.now()) + '.json', JSON.stringify(data, null, 2), 'application/json');
@@ -201,11 +212,12 @@ export function initMe(){
         if(!data || !Array.isArray(data.meals) || !Array.isArray(data.symptoms))
           throw new Error('文件格式不正确');
         if(!await showConfirm('导入确认', '导入将覆盖当前全部数据（共 ' + data.meals.length + ' 餐 / ' + data.symptoms.length + ' 症状），确认？')) return;
-        await Promise.all([dbClear('meals'), dbClear('symptoms'), dbClear('templates'), dbClear('moods')]);
+        await Promise.all([dbClear('meals'), dbClear('symptoms'), dbClear('templates'), dbClear('moods'), dbClear('bowels')]);
         for(const m of data.meals){ delete m._kind; await dbPut('meals', m); }
         for(const s of data.symptoms){ delete s._kind; await dbPut('symptoms', s); }
         for(const t of (data.templates || [])) await dbPut('templates', t);
         for(const m of (data.moods || [])){ delete m._kind; await dbPut('moods', m); }
+        for(const b of (data.bowels || [])){ delete b._kind; await dbPut('bowels', b); }
         if(data.customLevels) localStorage.setItem('fodmap_custom', JSON.stringify(data.customLevels));
         renderTemplates();
         renderBatchPanel();
@@ -222,7 +234,7 @@ export function initMe(){
   $('clearBtn').addEventListener('click', async ()=>{
     if(!await showConfirm('清空数据', '确认清空全部饮食/症状/模板数据？此操作不可恢复！')) return;
     if(!await showConfirm('二次确认', '真的要删除所有数据吗？')) return;
-    await Promise.all([dbClear('meals'), dbClear('symptoms'), dbClear('templates'), dbClear('moods')]);
+    await Promise.all([dbClear('meals'), dbClear('symptoms'), dbClear('templates'), dbClear('moods'), dbClear('bowels')]);
     renderTemplates();
     renderBatchPanel();
     toast('数据已清空');

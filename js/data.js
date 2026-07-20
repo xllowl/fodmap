@@ -127,6 +127,18 @@ export function moodTier(score){
   return              {seg:'#2BB39A', bg:'#E8F5EE', fg:'#1E7A4F'};
 }
 
+/* 布里斯托大便分类法（Bristol Stool Scale 1-7）
+ * n 类型号 / t 短名 / d 说明 / c 色块 / bg+fg 徽标配色（红=需关注 黄=偏差 绿=正常） */
+export const BRISTOL_TYPES = [
+  {n:1, t:'硬块',   d:'分离的硬块，像坚果，难以排出（严重便秘）', c:'#E86A5A', bg:'#FBEBE8', fg:'#C0392B'},
+  {n:2, t:'疙瘩状', d:'香肠状但表面疙瘩（轻度便秘）',             c:'#E5B93E', bg:'#FBF4DC', fg:'#8A6D1A'},
+  {n:3, t:'裂纹状', d:'香肠状但表面有裂缝（正常）',               c:'#3BAF7C', bg:'#E8F5EE', fg:'#1E7A4F'},
+  {n:4, t:'光滑状', d:'像香肠或蛇一样，光滑柔软（理想）',         c:'#2BB39A', bg:'#E8F5EE', fg:'#1E7A4F'},
+  {n:5, t:'软团状', d:'柔软的团块，边缘清晰，易排出（纤维不足）', c:'#E5B93E', bg:'#FBF4DC', fg:'#8A6D1A'},
+  {n:6, t:'糊状',   d:'蓬松的碎片状，边缘粗糙的糊状便（轻度腹泻）', c:'#E86A5A', bg:'#FBEBE8', fg:'#C0392B'},
+  {n:7, t:'水样',   d:'完全水样，无固体碎片（严重腹泻）',         c:'#C0392B', bg:'#FBEBE8', fg:'#C0392B'}
+];
+
 /* 用餐类型：正餐 3 餐 + 点心 */
 export const MEAL_TYPES = [
   {k:'breakfast', t:'早餐', i:'fa-mug-saucer'},

@@ -7,7 +7,7 @@
  * - 数据仍在 IndexedDB/localStorage，天然离线可用
  * 注意：每次发布更新请递增 VERSION，旧缓存会自动清理
  * ================================================================== */
-const VERSION = 'fodmap-v3';
+const VERSION = 'fodmap-v4';
 const APP_SHELL = [
   './',
   'index.html',
