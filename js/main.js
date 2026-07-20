@@ -40,3 +40,12 @@ document.querySelectorAll('#tabbar button').forEach(btn=>{
   initTimeline();
   initMe();
 })();
+
+/* ==================================================================
+ * PWA：注册 Service Worker（离线可用 / 可安装到主屏）
+ * ================================================================== */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{ /* 注册失败不影响使用 */ });
+  });
+}
