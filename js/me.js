@@ -31,7 +31,8 @@ async function exportMarkdown(){
   const moods = await dbAll('moods');
   const bowels = await dbAll('bowels');
   const coffees = await dbAll('coffees');
-  if(!meals.length && !symps.length && !moods.length && !bowels.length && !coffees.length){ toast('暂无数据可导出'); return; }
+  const waters = await dbAll('waters');
+  if(!meals.length && !symps.length && !moods.length && !bowels.length && !coffees.length && !waters.length){ toast('暂无数据可导出'); return; }
   const items = meals.map(m=>({...m,_kind:'meal'}))
     .concat(symps.map(s=>({...s,_kind:'sym'})))
     .concat(moods.map(m=>({...m,_kind:'mood'})))
@@ -83,6 +84,10 @@ async function exportMarkdown(){
       cs.forEach(c=>{
         md += '- ' + hm(c.time) + ' ' + c.type + ' 1杯\n';
       });
+    }
+    const w = waters.find(x=> x.day === dk);
+    if(w && w.cups > 0){
+      md += '## 饮水\n- 共 ' + w.cups + ' 杯（约 ' + (w.cups * 250) + 'ml）\n';
     }
     md += '\n';
   });
@@ -197,13 +202,14 @@ export function initMe(){
   /* 导出 JSON 备份（五个 store 全量 + 自定义级别表） */
   $('expJsonBtn').addEventListener('click', async ()=>{
     const data = {
-      version: 4, exportedAt: new Date().toISOString(),
+      version: 5, exportedAt: new Date().toISOString(),
       meals: await dbAll('meals'),
       symptoms: await dbAll('symptoms'),
       templates: await dbAll('templates'),
       moods: await dbAll('moods'),
       bowels: await dbAll('bowels'),
       coffees: await dbAll('coffees'),
+      waters: await dbAll('waters'),
       customLevels: loadCustom()
     };
     download('fodmap-backup-' + dayKey(Date.now()) + '.json', JSON.stringify(data, null, 2), 'application/json');
@@ -222,13 +228,14 @@ export function initMe(){
         if(!data || !Array.isArray(data.meals) || !Array.isArray(data.symptoms))
           throw new Error('文件格式不正确');
         if(!await showConfirm('导入确认', '导入将覆盖当前全部数据（共 ' + data.meals.length + ' 餐 / ' + data.symptoms.length + ' 症状），确认？')) return;
-        await Promise.all([dbClear('meals'), dbClear('symptoms'), dbClear('templates'), dbClear('moods'), dbClear('bowels'), dbClear('coffees')]);
+        await Promise.all([dbClear('meals'), dbClear('symptoms'), dbClear('templates'), dbClear('moods'), dbClear('bowels'), dbClear('coffees'), dbClear('waters')]);
         for(const m of data.meals){ delete m._kind; await dbPut('meals', m); }
         for(const s of data.symptoms){ delete s._kind; await dbPut('symptoms', s); }
         for(const t of (data.templates || [])) await dbPut('templates', t);
         for(const m of (data.moods || [])){ delete m._kind; await dbPut('moods', m); }
         for(const b of (data.bowels || [])){ delete b._kind; await dbPut('bowels', b); }
         for(const c of (data.coffees || [])){ delete c._kind; await dbPut('coffees', c); }
+        for(const w of (data.waters || [])){ delete w._kind; await dbPut('waters', w); }
         if(data.customLevels) localStorage.setItem('fodmap_custom', JSON.stringify(data.customLevels));
         renderTemplates();
         renderBatchPanel();
@@ -245,7 +252,7 @@ export function initMe(){
   $('clearBtn').addEventListener('click', async ()=>{
     if(!await showConfirm('清空数据', '确认清空全部饮食/症状/模板数据？此操作不可恢复！')) return;
     if(!await showConfirm('二次确认', '真的要删除所有数据吗？')) return;
-    await Promise.all([dbClear('meals'), dbClear('symptoms'), dbClear('templates'), dbClear('moods'), dbClear('bowels'), dbClear('coffees')]);
+    await Promise.all([dbClear('meals'), dbClear('symptoms'), dbClear('templates'), dbClear('moods'), dbClear('bowels'), dbClear('coffees'), dbClear('waters')]);
     renderTemplates();
     renderBatchPanel();
     toast('数据已清空');

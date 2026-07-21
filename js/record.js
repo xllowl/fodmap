@@ -5,7 +5,7 @@ import { SYS_PROMPT, FODMAP_PROMPT, AMT_CYCLE, LVL_CYCLE, LEVEL_TEXT,
          SYM_TYPES, MEAL_TYPES, deriveMealType, moodFace, moodTier,
          BRISTOL_TYPES, COFFEE_TYPES, evalMealScore, mealLevelFromScore } from './data.js';
 import { $, esc, toast, showConfirm, showPrompt, dtLocalVal, dayKey, symIcon } from './util.js';
-import { dbAdd, dbAll, dbDel } from './db.js';
+import { dbAdd, dbPut, dbAll, dbDel } from './db.js';
 import { lookupFodmap, fodmapLevel, saveCustomLevel, loadSettings } from './store.js';
 
 export const state = {
@@ -385,9 +385,62 @@ function renderBristol(){
 }
 
 /* ==================================================================
- * 症状记录：chips + 滑块，两步完成；选「无症状」时隐藏严重度（severity=0）
+ * 饮水记录：Bearable 水杯组件，每天一条 {day, cups} 计数
+ * ================================================================== */
+const WATER_GOAL = 8;       // 每日目标杯数
+const WATER_ML = 250;       // 每杯约 250ml
+let waterCups = 0;
+let waterRecId = null;      // 今日记录 id（有则更新，无则新建）
+function drawWater(){
+  $('waterFill').style.height = Math.min(waterCups / WATER_GOAL * 100, 100) + '%';
+  $('waterNum').textContent = waterCups;
+  $('waterLabel').textContent = waterCups
+    ? '今天已喝 ' + waterCups + ' 杯（约 ' + waterCups * WATER_ML + ' ml）' + (waterCups >= WATER_GOAL ? ' · 已达标' : '，目标 ' + WATER_GOAL + ' 杯')
+    : '今天还没喝水，目标 ' + WATER_GOAL + ' 杯';
+}
+async function renderWater(){
+  const k = dayKey(Date.now());
+  const rec = (await dbAll('waters')).find(w=> w.day === k);
+  waterCups = rec ? rec.cups : 0;
+  waterRecId = rec ? rec.id : null;
+  drawWater();
+}
+/* 连点防抖竞态：UI 即时更新，写库串行排队，避免重复建当日记录 */
+let waterSaving = Promise.resolve();
+function changeWater(delta){
+  waterCups = Math.max(0, waterCups + delta);
+  drawWater();
+  waterSaving = waterSaving.then(async ()=>{
+    if(waterRecId){ await dbPut('waters', {id: waterRecId, day: dayKey(Date.now()), cups: waterCups}); }
+    else if(waterCups > 0){ waterRecId = await dbAdd('waters', {day: dayKey(Date.now()), cups: waterCups}); }
+  });
+}
+
+/* ==================================================================
+ * 症状记录：chips + 严重度数字按钮组（Bearable 风，1-3绿/4-6黄/7-10红）
+ * 选「无症状」时隐藏严重度（severity=0）
  * ================================================================== */
 let selSym = null;
+let sevSel = 5;
+const SEV_COLORS = s=> s <= 3 ? '#3BAF7C' : s <= 6 ? '#E5B93E' : '#E86A5A';
+function renderSevBtns(){
+  const box = $('sevBtns');
+  box.innerHTML = '';
+  for(let i = 1; i <= 10; i++){
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = i;
+    const c = SEV_COLORS(i);
+    if(i === sevSel){
+      b.style.background = c; b.style.borderColor = c; b.style.color = '#fff';
+    }else{
+      b.style.color = c;
+    }
+    b.setAttribute('aria-label', '严重度 ' + i);
+    b.addEventListener('click', ()=>{ sevSel = i; renderSevBtns(); });
+    box.appendChild(b);
+  }
+}
 function renderSymChips(){
   const box = $('symChips');
   box.innerHTML = '';
@@ -511,18 +564,17 @@ export function initRecord(switchTab){
     toast('饮食记录已保存');
   });
 
-  $('sevSlider').addEventListener('input', ()=> $('sevVal').textContent = $('sevSlider').value + '/10');
   $('saveSymBtn').addEventListener('click', async ()=>{
     if(!selSym){ toast('请先选择症状'); return; }
     const cur = SYM_TYPES.find(s=> s.t === selSym);
     const none = !!(cur && cur.none);
     await dbAdd('symptoms', {
       time: Date.now(), type: selSym,
-      severity: none ? 0 : parseInt($('sevSlider').value, 10),
+      severity: none ? 0 : sevSel,
       note: $('symNote').value.trim()
     });
-    selSym = null; $('symNote').value = ''; $('sevSlider').value = 5; $('sevVal').textContent = '5/10';
-    renderSymChips();
+    selSym = null; $('symNote').value = ''; sevSel = 5;
+    renderSymChips(); renderSevBtns();
     toast(none ? '已标记：今日无症状' : '症状已记录');
   });
 
@@ -545,12 +597,17 @@ export function initRecord(switchTab){
     toast('已记录一杯' + coffeeSel);
   });
 
+  $('waterPlus').addEventListener('click', ()=> changeWater(1));
+  $('waterMinus').addEventListener('click', ()=> changeWater(-1));
+
   renderTemplates();
   renderSymChips();
+  renderSevBtns();
   renderMood();
   renderBristol();
   renderCoffeeChips();
   updateCoffeeToday();
+  renderWater();
   renderPhotoPicker();
   $('mealTimeInput').value = dtLocalVal(Date.now());
 }

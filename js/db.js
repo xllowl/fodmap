@@ -1,15 +1,16 @@
 /* ==================================================================
- * IndexedDB 封装：meals / symptoms / templates / moods / bowels / coffees
- * v2：新增 moods（心情记录）；v3：新增 bowels（排便记录）；v4：新增 coffees（咖啡记录）
+ * IndexedDB 封装
+ * v2：+moods（心情）；v3：+bowels（排便）；v4：+coffees（咖啡）
+ * v5：+waters（饮水量，按天一杯数记录 {day:'YYYY-MM-DD', cups}）
  * ================================================================== */
 let db = null;
 
 export function openDB(){
   return new Promise((res, rej)=>{
-    const r = indexedDB.open('fodmap-db', 4);
+    const r = indexedDB.open('fodmap-db', 5);
     r.onupgradeneeded = e=>{
       const d = e.target.result;
-      ['meals','symptoms','templates','moods','bowels','coffees'].forEach(s=>{
+      ['meals','symptoms','templates','moods','bowels','coffees','waters'].forEach(s=>{
         if(!d.objectStoreNames.contains(s)) d.createObjectStore(s, {keyPath:'id', autoIncrement:true});
       });
     };

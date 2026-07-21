@@ -165,9 +165,46 @@ nav#tabbar button.fab.active .fab-circle i{transform:rotate(45deg)} /* 打开记
   display:inline-flex;align-items:center;gap:6px;
 }
 .sym-chips button.sel{background:var(--teal-dark);color:#fff;font-weight:600}
-.sev-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.sev-row{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
 .sev-row input[type=range]{flex:1;accent-color:var(--teal-dark)}
 .sev-val{font-size:1.1rem;font-weight:700;color:var(--teal-dark);min-width:48px;text-align:center}
+/* 严重度数字按钮组（Bearable 风）：1-3绿 4-6黄 7-10红，选中填充 */
+.sev-btns{display:flex;gap:6px;flex-wrap:wrap}
+.sev-btns button{
+  width:38px;height:38px;border-radius:10px;background:#F4F5FA;
+  border:1.5px solid #E2E5F0;font-size:.92rem;font-weight:700;color:var(--ink-2);
+  transition:transform .1s ease,background .15s ease,color .15s ease,border-color .15s ease;
+}
+.sev-btns button:active{transform:scale(.9)}
+
+/* ============ 饮水记录（Bearable 水杯组件） ============ */
+.water-wrap{display:flex;align-items:center;justify-content:center;gap:20px;margin:8px 0 12px}
+.water-btn{
+  width:46px;height:46px;border-radius:50%;background:#EEF0F7;color:var(--peri-text);
+  font-size:1.4rem;font-weight:700;display:flex;align-items:center;justify-content:center;
+  transition:transform .1s ease,background .2s ease;
+}
+.water-btn:active{transform:scale(.9);background:var(--peri-bg)}
+.water-glass{
+  position:relative;width:78px;height:100px;
+  clip-path:polygon(4% 0,96% 0,86% 100%,14% 100%);
+  background:var(--peri);
+}
+.water-inner{
+  position:absolute;inset:3px;
+  clip-path:polygon(4% 0,96% 0,86% 100%,14% 100%);
+  background:#fff;overflow:hidden;
+}
+.water-fill{
+  position:absolute;left:0;right:0;bottom:0;height:0;
+  background:linear-gradient(180deg,#B9C8F8 0%,#8FA8F0 100%);
+  transition:height .35s ease;
+}
+.water-num{
+  position:absolute;inset:0;z-index:2;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.3rem;font-weight:800;color:#3A4266;
+}
 
 /* ============ 排便记录（布里斯托 1-7 型选择器） ============ */
 .bristol-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:8px}

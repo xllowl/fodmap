@@ -88,8 +88,7 @@
     <div class="sym-chips" id="symChips"></div>
     <div class="sev-row" id="sevRow">
       <span style="font-size:.85rem;color:var(--ink-2)">严重度</span>
-      <input type="range" id="sevSlider" min="1" max="10" value="5">
-      <span class="sev-val" id="sevVal">5/10</span>
+      <div class="sev-btns" id="sevBtns"></div>
     </div>
     <label class="field">备注（可选）
       <input type="text" id="symNote" placeholder="如：午饭后一小时开始">
@@ -114,6 +113,22 @@
     <div class="coffee-chips" id="coffeeChips"></div>
     <button class="btn-primary" id="saveCoffeeBtn">记录一杯</button>
     <div class="coffee-today" id="coffeeToday"></div>
+  </div>
+
+  <div class="card">
+    <h2><i class="fa-solid fa-glass-water" aria-hidden="true"></i>饮水记录</h2>
+    <div class="sub">每杯约 250ml，目标 8 杯</div>
+    <div class="water-wrap">
+      <button class="water-btn" id="waterMinus" aria-label="减少一杯">−</button>
+      <div class="water-glass" aria-hidden="true">
+        <div class="water-inner">
+          <div class="water-fill" id="waterFill"></div>
+          <div class="water-num" id="waterNum">0</div>
+        </div>
+      </div>
+      <button class="water-btn" id="waterPlus" aria-label="增加一杯">＋</button>
+    </div>
+    <div class="coffee-today" id="waterLabel">今天还没喝水</div>
   </div>
 </section>
 

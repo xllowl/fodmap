@@ -68,6 +68,12 @@ export async function renderTimeline(){
   const items = meals.concat(symps, moods, bowels, coffees)
     .filter(it=> dayKey(it.time) === selDay)
     .sort((a,b)=> b.time - a.time);
+  // 饮水量：按天一条计数，作为该日中午的汇总条目插入
+  const wRec = (await dbAll('waters')).find(w=> w.day === selDay);
+  if(wRec && wRec.cups > 0){
+    items.push({_kind:'water', id: wRec.id, time: new Date(selDay + 'T12:00:00').getTime(), cups: wRec.cups});
+    items.sort((a,b)=> b.time - a.time);
+  }
   const box = $('timelineList');
   box.innerHTML = '';
   // 日期标题：今天标注；查看历史日期时提供「回到今天」
@@ -205,7 +211,7 @@ function buildTimelineItem(it){
         '<span class="sev-badge" style="background:' + b.bg + ';color:' + b.fg + '">类型 ' + b.n + '</span>' +
       '</div>' +
       (it.note ? '<div class="tl-note">' + esc(it.note) + '</div>' : '');
-  }else{ // coffee 咖啡条目
+  }else if(it._kind === 'coffee'){
     const cc = COFFEE_COLOR;
     body.innerHTML =
       '<div class="tl-sym">' +
@@ -214,6 +220,14 @@ function buildTimelineItem(it){
         '<span>咖啡 · ' + esc(it.type) + '</span>' +
         '<span class="sev-badge" style="background:' + cc.bg + ';color:' + cc.fg + '">1 杯</span>' +
       '</div>';
+  }else{ // water 饮水条目（当日汇总，左滑可清空）
+    body.innerHTML =
+      '<div class="tl-sym">' +
+        '<span class="ico" style="color:#4A90D9">' + symIcon('fa-glass-water', '饮水') + '</span>' +
+        '<span>饮水</span>' +
+        '<span class="sev-badge" style="background:#E3F0FE;color:#2F6FBF">' + it.cups + ' 杯</span>' +
+      '</div>' +
+      '<div class="tl-note">约 ' + it.cups * 250 + ' ml · 在记录页可增减今日水量</div>';
   }
 
   // 点时间弹出时间编辑框
@@ -232,7 +246,7 @@ function buildTimelineItem(it){
 }
 
 /* 条目类型 → IndexedDB store 名 */
-const STORE_OF = {meal:'meals', sym:'symptoms', mood:'moods', bowel:'bowels', coffee:'coffees'};
+const STORE_OF = {meal:'meals', sym:'symptoms', mood:'moods', bowel:'bowels', coffee:'coffees', water:'waters'};
 
 /* 修改条目时间（饮食/症状/心情/排便/咖啡通用），保存后刷新时间线 */
 async function editItemTime(it){
