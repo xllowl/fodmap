@@ -3,8 +3,8 @@
  * ================================================================== */
 import { SYS_PROMPT, FODMAP_PROMPT, AMT_CYCLE, LVL_CYCLE, LEVEL_TEXT,
          SYM_TYPES, MEAL_TYPES, deriveMealType, moodFace, moodTier,
-         BRISTOL_TYPES, evalMealScore, mealLevelFromScore } from './data.js';
-import { $, esc, toast, showConfirm, showPrompt, dtLocalVal, symIcon } from './util.js';
+         BRISTOL_TYPES, COFFEE_TYPES, evalMealScore, mealLevelFromScore } from './data.js';
+import { $, esc, toast, showConfirm, showPrompt, dtLocalVal, dayKey, symIcon } from './util.js';
 import { dbAdd, dbAll, dbDel } from './db.js';
 import { lookupFodmap, fodmapLevel, saveCustomLevel, loadSettings } from './store.js';
 
@@ -403,6 +403,28 @@ function renderSymChips(){
 }
 
 /* ==================================================================
+ * 咖啡记录：类型 chips + 一键记录一杯 + 今日杯数
+ * ================================================================== */
+let coffeeSel = COFFEE_TYPES[0];
+function renderCoffeeChips(){
+  const box = $('coffeeChips');
+  box.innerHTML = '';
+  COFFEE_TYPES.forEach(t=>{
+    const b = document.createElement('button');
+    b.innerHTML = symIcon('fa-mug-hot', t) + ' ' + t;
+    b.className = coffeeSel === t ? 'sel' : '';
+    b.addEventListener('click', ()=>{ coffeeSel = t; renderCoffeeChips(); });
+    box.appendChild(b);
+  });
+}
+async function updateCoffeeToday(){
+  const all = await dbAll('coffees');
+  const k = dayKey(Date.now());
+  const n = all.filter(c=> dayKey(c.time) === k).length;
+  $('coffeeToday').textContent = n ? '今天已喝 ' + n + ' 杯' : '今天还没喝咖啡';
+}
+
+/* ==================================================================
  * 事件绑定与初始化
  * ================================================================== */
 export function initRecord(switchTab){
@@ -410,6 +432,18 @@ export function initRecord(switchTab){
   $('photoInput').addEventListener('change', onPhotoPicked);
   $('galleryInput').addEventListener('change', onPhotoPicked);
   $('analyzeBtn').addEventListener('click', analyze);
+
+  /* 手动记录：不经过 AI，直接打开空白的待确认表单 */
+  $('manualMealBtn').addEventListener('click', ()=>{
+    state.parsed = {dish: '', ingredients: []};
+    state.mealType = null; state.mealTypeManual = false;
+    state.mealLevel = null; state.mealLevelManual = false;
+    $('mealTimeInput').value = dtLocalVal(Date.now());
+    renderConfirm();
+    $('confirmCard').scrollIntoView({behavior:'smooth'});
+    setTimeout(()=> $('dishInput').focus(), 300);
+    toast('手动记录：填写菜名并添加食材');
+  });
 
   $('addIngBtn').addEventListener('click', ()=>{
     const name = $('addIngInput').value.trim();
@@ -505,10 +539,18 @@ export function initRecord(switchTab){
     toast('排便已记录：类型 ' + bristolSel + ' ' + cur.t);
   });
 
+  $('saveCoffeeBtn').addEventListener('click', async ()=>{
+    await dbAdd('coffees', {time: Date.now(), type: coffeeSel});
+    updateCoffeeToday();
+    toast('已记录一杯' + coffeeSel);
+  });
+
   renderTemplates();
   renderSymChips();
   renderMood();
   renderBristol();
+  renderCoffeeChips();
+  updateCoffeeToday();
   renderPhotoPicker();
   $('mealTimeInput').value = dtLocalVal(Date.now());
 }

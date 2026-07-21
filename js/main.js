@@ -5,16 +5,18 @@ import { openDB } from './db.js';
 import { initRecord } from './record.js';
 import { initTimeline, renderTimeline } from './timeline.js';
 import { renderStats } from './stats.js';
+import { initKB, renderKB } from './kb.js';
 import { initMe, renderBatchPanel } from './me.js';
 
 /* ==================================================================
- * Tab 切换
+ * Tab 切换（默认时间线；记录页由中央圆圈进入）
  * ================================================================== */
 function switchTab(tab){
   document.querySelectorAll('#tabbar button').forEach(b=> b.classList.toggle('active', b.dataset.tab===tab));
   document.querySelectorAll('section.tabpage').forEach(p=> p.classList.toggle('active', p.id==='page-'+tab));
   if(tab==='timeline') renderTimeline();
   if(tab==='stats') renderStats();
+  if(tab==='kb') renderKB();
   if(tab==='me') renderBatchPanel(); // 食材可能新增/改级，每次进入刷新批量面板
   window.scrollTo(0,0);
 }
@@ -38,7 +40,9 @@ document.querySelectorAll('#tabbar button').forEach(btn=>{
   catch(e){ alert('IndexedDB 打开失败，请确认未处于无痕模式'); return; }
   initRecord(switchTab);
   initTimeline();
+  initKB();
   initMe();
+  renderTimeline(); // 默认视图为时间线
 })();
 
 /* ==================================================================

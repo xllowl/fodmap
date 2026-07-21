@@ -139,6 +139,11 @@ export const BRISTOL_TYPES = [
   {n:7, t:'水样',   d:'完全水样，无固体碎片（严重腹泻）',         c:'#C0392B', bg:'#FBEBE8', fg:'#C0392B'}
 ];
 
+/* 咖啡类型（快速记录用） */
+export const COFFEE_TYPES = ['美式', '拿铁', '浓缩', '低因', '其他'];
+/* 咖啡条目配色（时间线/徽标统一咖啡棕） */
+export const COFFEE_COLOR = {c:'#8B5E34', bg:'#F5EDE4', fg:'#8B5E34'};
+
 /* 用餐类型：正餐 3 餐 + 点心 */
 export const MEAL_TYPES = [
   {k:'breakfast', t:'早餐', i:'fa-mug-saucer'},

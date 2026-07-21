@@ -4,7 +4,7 @@
  * ================================================================== */
 import { AMT_SHORT, SYM_TYPES, MEAL_TYPES, MEAL_TYPE_MAP, mealTypeOf,
          LEVEL_TEXT, evalMealScore, mealLevelOf, mealScoreOf,
-         moodFace, moodTier, BRISTOL_TYPES } from './data.js';
+         moodFace, moodTier, BRISTOL_TYPES, COFFEE_COLOR } from './data.js';
 import { $, esc, pad, dayKey, hm, dtLocalVal, toast, showConfirm, showModal,
          lvlIcon, symIcon, attachSwipe, setFold } from './util.js';
 import { dbAll, dbDel, dbPut } from './db.js';
@@ -63,8 +63,9 @@ export async function renderTimeline(){
   const symps = (await dbAll('symptoms')).map(s=>({...s, _kind:'sym'}));
   const moods = (await dbAll('moods')).map(m=>({...m, _kind:'mood'}));
   const bowels = (await dbAll('bowels')).map(b=>({...b, _kind:'bowel'}));
+  const coffees = (await dbAll('coffees')).map(c=>({...c, _kind:'coffee'}));
   renderCalendar(meals, symps);
-  const items = meals.concat(symps, moods, bowels)
+  const items = meals.concat(symps, moods, bowels, coffees)
     .filter(it=> dayKey(it.time) === selDay)
     .sort((a,b)=> b.time - a.time);
   const box = $('timelineList');
@@ -194,7 +195,7 @@ function buildTimelineItem(it){
         '<span class="sev-badge" style="background:' + t.bg + ';color:' + t.fg + '">' + it.score + '/10</span>' +
       '</div>' +
       (it.note ? '<div class="tl-note">' + esc(it.note) + '</div>' : '');
-  }else{ // bowel 排便条目（布里斯托类型）
+  }else if(it._kind === 'bowel'){
     const b = BRISTOL_TYPES.find(x=> x.n === it.type) || BRISTOL_TYPES[3];
     body.innerHTML =
       '<div class="tl-sym">' +
@@ -204,6 +205,15 @@ function buildTimelineItem(it){
         '<span class="sev-badge" style="background:' + b.bg + ';color:' + b.fg + '">类型 ' + b.n + '</span>' +
       '</div>' +
       (it.note ? '<div class="tl-note">' + esc(it.note) + '</div>' : '');
+  }else{ // coffee 咖啡条目
+    const cc = COFFEE_COLOR;
+    body.innerHTML =
+      '<div class="tl-sym">' +
+        '<span class="ico" style="color:' + cc.c + '">' + symIcon('fa-mug-hot', '咖啡') + '</span>' +
+        '<button class="tl-time" data-act="time" title="点按修改时间">' + hm(it.time) + '</button>' +
+        '<span>咖啡 · ' + esc(it.type) + '</span>' +
+        '<span class="sev-badge" style="background:' + cc.bg + ';color:' + cc.fg + '">1 杯</span>' +
+      '</div>';
   }
 
   // 点时间弹出时间编辑框
@@ -222,14 +232,15 @@ function buildTimelineItem(it){
 }
 
 /* 条目类型 → IndexedDB store 名 */
-const STORE_OF = {meal:'meals', sym:'symptoms', mood:'moods', bowel:'bowels'};
+const STORE_OF = {meal:'meals', sym:'symptoms', mood:'moods', bowel:'bowels', coffee:'coffees'};
 
-/* 修改条目时间（饮食/症状/心情/排便通用），保存后刷新时间线 */
+/* 修改条目时间（饮食/症状/心情/排便/咖啡通用），保存后刷新时间线 */
 async function editItemTime(it){
   const storeName = STORE_OF[it._kind];
   const desc = it._kind === 'meal' ? ('「' + it.dishName + '」的用餐时间')
            : it._kind === 'mood' ? '「心情」的记录时间'
            : it._kind === 'bowel' ? '「排便」的记录时间'
+           : it._kind === 'coffee' ? '「咖啡」的记录时间'
            : ('「' + it.type + '」的记录时间');
   const v = await showModal({
     title: '修改时间',

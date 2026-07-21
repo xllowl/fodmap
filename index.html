@@ -21,8 +21,8 @@
 <header>FODMAP 饮食追踪</header>
 
 <main>
-<!-- ================= Tab1 记录 ================= -->
-<section id="page-record" class="tabpage active">
+<!-- ================= Tab1 记录（经底部圆圈进入） ================= -->
+<section id="page-record" class="tabpage">
 
   <div class="card">
     <h2><i class="fa-solid fa-utensils" aria-hidden="true"></i>饮食记录</h2>
@@ -34,7 +34,9 @@
       <input type="text" id="noteInput" placeholder="如：外卖，备注免蒜">
     </label>
     <button class="btn-primary" id="analyzeBtn">分析食材</button>
-    <div class="hint">需先在「我的」页配置 API。分析结果可手动修正后再保存。</div>
+    <div style="height:8px"></div>
+    <button class="btn-ghost" id="manualMealBtn" style="width:100%;padding:12px">不用 AI，手动记录这一餐</button>
+    <div class="hint">AI 分析需先在「我的」页配置 API；手动记录可直接填写菜名与食材。</div>
   </div>
 
   <!-- 确认界面（分析后显示） -->
@@ -105,10 +107,18 @@
     </label>
     <button class="btn-primary" id="saveBowelBtn">保存排便记录</button>
   </div>
+
+  <div class="card">
+    <h2><i class="fa-solid fa-mug-hot" aria-hidden="true"></i>咖啡记录</h2>
+    <div class="sub">选类型后「记录一杯」，自动带上当前时间</div>
+    <div class="coffee-chips" id="coffeeChips"></div>
+    <button class="btn-primary" id="saveCoffeeBtn">记录一杯</button>
+    <div class="coffee-today" id="coffeeToday"></div>
+  </div>
 </section>
 
-<!-- ================= Tab2 时间线 ================= -->
-<section id="page-timeline" class="tabpage">
+<!-- ================= Tab2 时间线（默认视图） ================= -->
+<section id="page-timeline" class="tabpage active">
   <div class="card">
     <div class="cal-head">
       <button id="calPrev" class="cal-nav" aria-label="上个月"><i class="fa-solid fa-chevron-left fa-btn" aria-hidden="true"></i></button>
@@ -147,7 +157,19 @@
   </div>
 </section>
 
-<!-- ================= Tab4 我的 ================= -->
+<!-- ================= Tab4 知识库 ================= -->
+<section id="page-kb" class="tabpage">
+  <div class="card">
+    <h2><i class="fa-solid fa-book-open" aria-hidden="true"></i>FODMAP 知识库</h2>
+    <div class="sub">常见食物等级速查；你手动定级过的食材会收录到「自定义」</div>
+    <input type="text" id="kbSearch" placeholder="搜索食物或别名，如：洋葱 / 西红柿">
+    <div class="kb-cats" id="kbCats"></div>
+    <div class="kb-count" id="kbCount"></div>
+    <div id="kbList"></div>
+  </div>
+</section>
+
+<!-- ================= Tab5 我的 ================= -->
 <section id="page-me" class="tabpage">
   <div class="card">
     <h2><i class="fa-solid fa-gear" aria-hidden="true"></i>API 设置</h2>
@@ -211,11 +233,12 @@
   </div>
 </div>
 
-<!-- ================= 底部导航 ================= -->
+<!-- ================= 底部导航（默认时间线；中央圆圈进记录页） ================= -->
 <nav id="tabbar">
-  <button data-tab="record" class="active" aria-label="记录"><span class="ico"><i class="fa-solid fa-pen-to-square fa-btn" aria-hidden="true"></i></span>记录</button>
-  <button data-tab="timeline" aria-label="时间线"><span class="ico"><i class="fa-solid fa-clock-rotate-left fa-btn" aria-hidden="true"></i></span>时间线</button>
+  <button data-tab="timeline" class="active" aria-label="时间线"><span class="ico"><i class="fa-solid fa-clock-rotate-left fa-btn" aria-hidden="true"></i></span>时间线</button>
   <button data-tab="stats" aria-label="统计"><span class="ico"><i class="fa-solid fa-chart-column fa-btn" aria-hidden="true"></i></span>统计</button>
+  <button data-tab="record" class="fab" aria-label="记录"><span class="fab-circle"><i class="fa-solid fa-plus" aria-hidden="true"></i></span></button>
+  <button data-tab="kb" aria-label="知识库"><span class="ico"><i class="fa-solid fa-book-open fa-btn" aria-hidden="true"></i></span>知识库</button>
   <button data-tab="me" aria-label="我的"><span class="ico"><i class="fa-solid fa-user fa-btn" aria-hidden="true"></i></span>我的</button>
 </nav>
 
