@@ -68,15 +68,19 @@ export async function renderStats(){
       '<div class="mt-trend">' + bars + '</div>';
   }
 
-  /* --- 食材触发分析：食用后24h内出现症状次数 / 总食用次数 --- */
+  /* --- 食材触发分析：以症状为锚，统计其前 48h 内食用过的食材 ---
+   * FODMAP 反应多为 0-48h 延迟出现；对每个食材：出现症状前48h内食用过的餐次 / 总食用餐次
+   * （severity=0 的无症状标记不算症状） */
+  const SYM_WINDOW = 48 * 3600 * 1000;
+  const realSymps = symps.filter(s=> s.severity > 0);
   const map = {}; // 归一化食材名 -> {total, sympt}
   meals.forEach(m=>{
     const names = [...new Set(m.ingredients.map(g=> canonName(g.name)))];
     names.forEach(n=>{
       if(!map[n]) map[n] = {total:0, sympt:0};
       map[n].total++;
-      // 该餐后 24 小时内是否有症状（severity=0 的无症状标记不算）
-      const has = symps.some(s=> s.severity > 0 && s.time >= m.time && s.time <= m.time + 24*3600*1000);
+      // 该餐是否落在某个症状前 48h 窗口内
+      const has = realSymps.some(s=> m.time >= s.time - SYM_WINDOW && m.time <= s.time);
       if(has) map[n].sympt++;
     });
   });
@@ -105,7 +109,7 @@ export async function renderStats(){
         '<span class="trig-rate">' + Math.round(rate*100) + '%</span>' +
       '</div>' +
       '<div class="trig-bar"><i style="width:' + Math.round(rate*100) + '%"></i></div>' +
-      '<div class="trig-meta">' + v.sympt + '/' + v.total + ' 次食用后出现症状</div>';
+      '<div class="trig-meta">' + v.total + ' 次食用中 ' + v.sympt + ' 次落在症状前 48h 内</div>';
     return div;
   };
 
