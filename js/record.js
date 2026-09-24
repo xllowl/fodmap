@@ -1,12 +1,13 @@
 /* ==================================================================
  * Tab1 记录：拍照分析 / 食材确认 / 模板 / 症状记录
  * ================================================================== */
-import { SYS_PROMPT, FODMAP_PROMPT, AMT_CYCLE, LVL_CYCLE, LEVEL_TEXT,
+import { SYS_PROMPT, FODMAP_PROMPT, AMT_CYCLE, LVL_CYCLE, LEVEL_TEXT, LEVEL_COLOR,
          SYM_TYPES, MEAL_TYPES, deriveMealType, moodFace, moodTier,
          BRISTOL_TYPES, COFFEE_TYPES, evalMealScore, mealLevelFromScore } from './data.js';
 import { $, esc, toast, showConfirm, showPrompt, dtLocalVal, dayKey, symIcon } from './util.js';
 import { dbAdd, dbPut, dbAll, dbDel } from './db.js';
 import { lookupFodmap, fodmapLevel, saveCustomLevel, loadSettings } from './store.js';
+import { detectDishes, cropByBox } from './detect.js';
 
 export const state = {
   photo: null,            // 1024px base64（发 API 用）
@@ -70,34 +71,69 @@ function processImage(file){
 
 /* ==================================================================
  * 调用多模态 LLM 分析食材（OpenAI 兼容 chat completions）
+ * 多菜品流程：整图检测区域 → 本地裁剪 → 逐菜识别 → 汇总
  * ================================================================== */
-/* 批量向大模型查询未知食材的 FODMAP 级别；失败静默返回 null（不阻塞主流程） */
-async function askFodmapLevels(names){
-  if(!names.length) return [];
+
+/* 单次识别调用：imgBase64 为一张图（可为 null 走纯备注推断），
+ * 返回解析后的 {dish, ingredients}；抛错由调用方处理 */
+async function recognizeImage(imgBase64, textNote){
   const s = loadSettings();
-  try{
-    const resp = await fetch(s.baseUrl, {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + s.apiKey },
-      body: JSON.stringify({
-        model: s.model,
-        messages: [
-          {role:'system', content: FODMAP_PROMPT},
-          {role:'user',   content: '请定级：' + names.join('、')}
-        ],
-        temperature: 0.1
-      })
-    });
-    if(!resp.ok) return null;
-    const data = await resp.json();
-    const content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-    if(!content) return null;
-    const t = content.replace(/```(?:json)?/gi, '');
-    const i = t.indexOf('['), j = t.lastIndexOf(']');
-    if(i < 0 || j <= i) return null;
-    const arr = JSON.parse(t.slice(i, j+1));
-    return Array.isArray(arr) ? arr : null;
-  }catch(e){ return null; }
+  const userContent = [];
+  if(imgBase64) userContent.push({type:'image_url', image_url:{url: imgBase64}});
+  userContent.push({type:'text', text: textNote});
+  const resp = await fetch(s.baseUrl, {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + s.apiKey },
+    body: JSON.stringify({
+      model: s.model,
+      messages: [
+        {role:'system', content: SYS_PROMPT},
+        {role:'user',   content: userContent}
+      ],
+      temperature: 0.2
+    })
+  });
+  if(!resp.ok){
+    const t = await resp.text().catch(()=> '');
+    throw new Error('API 返回 ' + resp.status + '：' + t.slice(0, 150));
+  }
+  const data = await resp.json();
+  const content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+  if(!content) throw new Error('API 返回结构异常');
+  return parseLLM(content);
+}
+
+/* 汇总多菜品识别结果：
+ * - dishes: 每道菜 {name, crop, ingredients}，供确认页汇总区展示与逐道移除
+ * - ingredients: 跨菜品合并后的清单（同名合并、量级取大者、推测标记从严） */
+function mergeIngredients(dishes){
+  const merged = [], byName = new Map();
+  const RANK = {'少量': 0, '中等': 1, '大量': 2};
+  dishes.forEach(d=> d.ingredients.forEach(g=>{
+    if(byName.has(g.name)){
+      const m = byName.get(g.name);
+      if((RANK[g.amount] || 1) > (RANK[m.amount] || 1)) m.amount = g.amount;
+      m.inferred = m.inferred && g.inferred; // 任一菜确认过即不算推测
+    }else{
+      const copy = {...g};
+      byName.set(g.name, copy);
+      merged.push(copy);
+    }
+  }));
+  return merged;
+}
+function joinDishNames(dishes){
+  const names = dishes.map(d=> d.name).filter(Boolean);
+  if(!names.length) return '多菜品餐';
+  return names.length <= 3 ? names.join('＋') : names.slice(0, 3).join('＋') + ' 等' + names.length + '道菜';
+}
+function aggregateDishes(results){
+  const dishes = results.map(r=>({
+    name: (r.parsed.dish && r.parsed.dish !== '未命名') ? r.parsed.dish : r.name,
+    crop: r.crop,
+    ingredients: r.parsed.ingredients
+  }));
+  return {dish: joinDishNames(dishes), dishes, ingredients: mergeIngredients(dishes)};
 }
 
 async function analyze(){
@@ -110,38 +146,48 @@ async function analyze(){
     toast('请先拍照或填写备注'); return;
   }
   const btn = $('analyzeBtn');
+  const SPIN = '<i class="fa-solid fa-circle-notch fa-spin fa-only" aria-hidden="true"></i><span class="spin fa-fallback"></span> ';
+  const setBtn = t => { btn.innerHTML = SPIN + t; };
   btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin fa-only" aria-hidden="true"></i><span class="spin fa-fallback"></span> 分析中…';
   try{
-    // 组装 user message：base64 图放 image_url 字段
-    const userContent = [];
-    if(state.photo) userContent.push({type:'image_url', image_url:{url: state.photo}});
     const note = $('noteInput').value.trim();
-    userContent.push({type:'text', text:
-      '备注：' + (note || '（无）') +
-      (state.photo ? '\n请分析照片中的这餐。' : '\n（无照片，请根据备注推断这餐最可能的食材）')});
-    const resp = await fetch(s.baseUrl, {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + s.apiKey },
-      body: JSON.stringify({
-        model: s.model,
-        messages: [
-          {role:'system', content: SYS_PROMPT},
-          {role:'user',   content: userContent}
-        ],
-        temperature: 0.2
-      })
-    });
-    if(!resp.ok){
-      const t = await resp.text().catch(()=> '');
-      throw new Error('API 返回 ' + resp.status + '：' + t.slice(0, 150));
+    if(!state.photo){
+      /* 无照片：按备注推断（原单次流程） */
+      setBtn('分析中…');
+      state.parsed = await recognizeImage(null,
+        '备注：' + (note || '（无）') + '\n（无照片，请根据备注推断这餐最可能的食材）');
+    }else{
+      /* 有照片：先检测菜品区域 */
+      setBtn('检测菜品区域…');
+      let regions = null;
+      try{ regions = await detectDishes(state.photo, s); }
+      catch(e){ regions = null; } // 检测失败降级整图识别
+      if(regions && regions.length >= 2){
+        /* 多道菜：逐区域裁剪 → 单独识别 → 汇总 */
+        const results = [];
+        for(let i = 0; i < regions.length; i++){
+          setBtn('识别菜品 ' + (i + 1) + '/' + regions.length + '…');
+          const r = regions[i];
+          try{
+            const crop = await cropByBox(state.photo, r.box);
+            const parsed = await recognizeImage(crop,
+              '备注：' + (note || '（无）') +
+              '\n这是从整餐照片中裁剪出的一道菜品（检测标签：' + r.name + '），请单独分析这道菜的食材。');
+            results.push({name: r.name, crop, parsed});
+          }catch(e){ /* 单道失败跳过，不中断整餐 */ }
+        }
+        if(!results.length) throw new Error('各菜品识别均失败，可重试');
+        state.parsed = aggregateDishes(results);
+        toast('检测到 ' + results.length + ' 道菜，已汇总食材，请逐道确认');
+      }else{
+        /* 单道菜 / 检测未命中：整图直接识别（保持原有行为） */
+        setBtn('分析中…');
+        state.parsed = await recognizeImage(state.photo,
+          '备注：' + (note || '（无）') + '\n请分析照片中的这餐。');
+        toast('分析完成，请确认食材');
+      }
     }
-    const data = await resp.json();
-    const content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-    if(!content) throw new Error('API 返回结构异常');
-    state.parsed = parseLLM(content);
     renderConfirm();
-    toast('分析完成，请确认食材');
     // 后台自动批量查询本地表未收录食材的 FODMAP 级别（不阻塞确认界面）
     autoFillUnknownLevels();
   }catch(err){
@@ -177,8 +223,37 @@ function parseLLM(text){
   return obj;
 }
 
-/* 后台自动批量查询未知食材级别，回填确认界面；AI 定级同样记忆到自定义表 */
 let aiReasons = {}; // 本轮 AI 定级理由 {食材名: 理由}
+
+/* 批量向大模型查询未知食材的 FODMAP 级别；失败静默返回 null（不阻塞主流程） */
+async function askFodmapLevels(names){
+  if(!names.length) return [];
+  const s = loadSettings();
+  try{
+    const resp = await fetch(s.baseUrl, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + s.apiKey },
+      body: JSON.stringify({
+        model: s.model,
+        messages: [
+          {role:'system', content: FODMAP_PROMPT},
+          {role:'user',   content: '请定级：' + names.join('、')}
+        ],
+        temperature: 0.1
+      })
+    });
+    if(!resp.ok) return null;
+    const data = await resp.json();
+    const content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+    if(!content) return null;
+    const t = content.replace(/```(?:json)?/gi, '');
+    const i = t.indexOf('['), j = t.lastIndexOf(']');
+    if(i < 0 || j <= i) return null;
+    const arr = JSON.parse(t.slice(i, j+1));
+    return Array.isArray(arr) ? arr : null;
+  }catch(e){ return null; }
+}
+
 async function autoFillUnknownLevels(){
   if(!state.parsed) return;
   const unknown = [...new Set(state.parsed.ingredients
@@ -218,7 +293,44 @@ function renderConfirm(){
     state.mealTypeManual = false;
   }
   renderMtypeChips();
+  renderDishRoster();
   renderIngList();
+}
+
+/* 菜品汇总区（多菜品识别时显示）：每道菜一张小卡片
+ * 展示裁剪图 + 菜名 + 单菜 FODMAP 评估；点 ✕ 可整道移除（连带其专属食材） */
+function renderDishRoster(){
+  const box = $('dishRoster');
+  const dishes = state.parsed && state.parsed.dishes;
+  if(!dishes || dishes.length < 2){ box.innerHTML = ''; box.style.display = 'none'; return; }
+  box.style.display = '';
+  box.innerHTML = '';
+  dishes.forEach((d, idx)=>{
+    const chip = document.createElement('div');
+    chip.className = 'dish-chip';
+    const score = evalMealScore(d.ingredients);
+    const lv = mealLevelFromScore(score);
+    chip.innerHTML =
+      '<img class="dish-thumb" src="' + d.crop + '" alt="菜品裁剪图">' +
+      '<div class="dish-meta">' +
+        '<span class="dish-name">' + esc(d.name) + '</span>' +
+        '<span class="dish-lv"><i class="cal-dot" style="background:' + LEVEL_COLOR[lv] + '"></i>' +
+          LEVEL_TEXT[lv] + ' · 评分 ' + score + '</span>' +
+      '</div>' +
+      '<button class="dish-x" aria-label="移除这道菜"><i class="fa-solid fa-xmark fa-only" aria-hidden="true"></i><span class="fa-fallback">✕</span></button>';
+    chip.querySelector('.dish-x').addEventListener('click', async ()=>{
+      if(!(await showConfirm('移除菜品', '把「' + d.name + '」及其食材从本餐移除？'))) return;
+      dishes.splice(idx, 1);
+      // 从剩余菜品重新合并食材与菜名（多菜共用的食材只在全部移除后才消失）
+      state.parsed.ingredients = mergeIngredients(dishes);
+      state.parsed.dish = joinDishNames(dishes);
+      $('dishInput').value = state.parsed.dish;
+      renderDishRoster();
+      renderIngList();
+      toast('已移除「' + d.name + '」');
+    });
+    box.appendChild(chip);
+  });
 }
 
 /* 整餐评估行：按 级别×含量 自动评分；手动改过则保留手动级别并显示「恢复自动」 */

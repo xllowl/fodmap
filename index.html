@@ -36,7 +36,7 @@
     <button class="btn-primary" id="analyzeBtn">分析食材</button>
     <div style="height:8px"></div>
     <button class="btn-ghost" id="manualMealBtn" style="width:100%;padding:12px">不用 AI，手动记录这一餐</button>
-    <div class="hint">AI 分析需先在「我的」页配置 API；手动记录可直接填写菜名与食材。</div>
+    <div class="hint">AI 分析需先在「我的」页配置 API；照片中有多个菜时，会自动检测各菜品区域、裁剪后逐道识别再汇总；手动记录可直接填写菜名与食材。</div>
   </div>
 
   <!-- 确认界面（分析后显示） -->
@@ -52,6 +52,7 @@
     <div class="field" style="font-size:.85rem;color:var(--ink-2);margin-bottom:12px">餐次（默认按时间推断，可点选修改）
       <div class="mtype-chips" id="mtypeChips"></div>
     </div>
+    <div id="dishRoster" class="dish-roster" style="display:none"></div>
     <div id="ingList"></div>
     <div class="add-ing">
       <input type="text" id="addIngInput" placeholder="手动添加食材">

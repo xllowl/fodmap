@@ -441,3 +441,23 @@ body.no-fa .fa-fallback{display:inline}
 .modal-btns button{flex:1;padding:11px;font-size:.95rem;border-radius:10px}
 .modal-btns .m-ok{background:var(--teal-dark);color:#fff;font-weight:600}
 .modal-btns .m-cancel{background:#EEF0F7;color:var(--ink-2)}
+
+/* ============ 多菜品识别汇总区（确认页） ============ */
+/* 每道菜一张小卡片：裁剪图 + 菜名 + 单菜评估，✕ 可整道移除 */
+.dish-roster{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 12px;-webkit-overflow-scrolling:touch}
+.dish-chip{
+  display:flex;align-items:center;gap:8px;flex:0 0 auto;
+  background:#fff;border:1px solid #E3E5F0;border-radius:14px;padding:6px 8px 6px 6px;
+  box-shadow:0 1px 3px rgba(34,38,74,.06);
+}
+.dish-thumb{width:54px;height:54px;object-fit:cover;border-radius:10px;display:block;background:#EEF0F7}
+.dish-meta{display:flex;flex-direction:column;gap:3px;min-width:0;max-width:110px}
+.dish-name{font-size:.85rem;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dish-lv{font-size:.72rem;color:var(--ink-2);display:flex;align-items:center;white-space:nowrap}
+.dish-lv .cal-dot{width:8px;height:8px;border-radius:50%}
+.dish-x{
+  border:none;background:#EEF0F7;color:var(--ink-2);width:24px;height:24px;
+  border-radius:50%;font-size:.8rem;line-height:1;cursor:pointer;flex:0 0 auto;
+}
+.dish-x:hover{background:#F3E0DE;color:var(--ink)}
+
